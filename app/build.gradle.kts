@@ -6,7 +6,49 @@
  */
 
 import com.android.build.api.dsl.ApplicationExtension
+import java.io.File
+import java.util.Base64
 import java.util.Properties
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
+
+abstract class PrepareJaecooSigning : DefaultTask() {
+    @get:Internal
+    abstract val encodedKeystore: Property<String>
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun prepare() {
+        val keystore = outputFile.get().asFile
+        runCatching {
+            keystore.parentFile.mkdirs()
+            keystore.outputStream().use { output ->
+                output.write(Base64.getDecoder().decode(encodedKeystore.get()))
+            }
+            keystore.setReadable(false, false)
+            keystore.setReadable(true, true)
+        }.getOrElse { error("RELEASE_KEYSTORE_BASE64 is not valid base64") }
+    }
+}
+
+abstract class CleanJaecooSigning : DefaultTask() {
+    @get:Internal
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun clean() {
+        val keystore = outputFile.get().asFile
+        if (keystore.exists() && !keystore.delete()) {
+            error("Failed to remove temporary Jaecoo keystore")
+        }
+    }
+}
 
 plugins {
     alias(libs.plugins.android.application)
@@ -17,6 +59,76 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.rikka.tools.refine.plugin)
     alias(libs.plugins.hilt.android.plugin)
+}
+
+fun getSigningValue(key: String): String? {
+    System.getenv(key)?.takeIf { it.isNotBlank() }?.let { return it }
+    val localProperties = rootProject.file("local.properties")
+    if (localProperties.exists()) {
+        val properties = Properties().apply {
+            localProperties.inputStream().use(::load)
+        }
+        properties.getProperty(key)?.takeIf { it.isNotBlank() }?.let { return it }
+    }
+    return null
+}
+
+val releaseKeystoreBase64 = getSigningValue("RELEASE_KEYSTORE_BASE64")
+val decodedKeystore = layout.buildDirectory.file("tmp/jaecoo-signing/release.jks").get().asFile
+// The encoded keystore is the portable source of truth. RELEASE_KEYSTORE_PATH is
+// accepted only as a local fallback and is never propagated to CI.
+val releaseKeystorePath = if (releaseKeystoreBase64 != null) {
+    decodedKeystore.absolutePath
+} else {
+    getSigningValue("RELEASE_KEYSTORE_PATH")
+}
+val releaseKeystorePassword = getSigningValue("RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias = getSigningValue("RELEASE_KEY_ALIAS")
+val releaseKeyPassword = getSigningValue("RELEASE_KEY_PASSWORD")
+val requestedJaecooBuild = gradle.startParameter.taskNames.any {
+    it.contains("Jaecoo", ignoreCase = true) &&
+        (it.contains("assemble", ignoreCase = true) || it.contains("bundle", ignoreCase = true))
+}
+val environmentSigningConfigured = listOf(
+    releaseKeystorePath,
+    releaseKeystorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
+if (requestedJaecooBuild && !environmentSigningConfigured) {
+    error(
+        "Jaecoo builds require RELEASE_KEYSTORE_BASE64 (or local RELEASE_KEYSTORE_PATH), " +
+            "RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD"
+    )
+}
+
+val prepareJaecooSigning = tasks.register<PrepareJaecooSigning>("prepareJaecooSigning") {
+    encodedKeystore.set(releaseKeystoreBase64)
+    outputFile.set(decodedKeystore)
+}
+val cleanJaecooSigning = tasks.register<CleanJaecooSigning>("cleanJaecooSigning") {
+    outputFile.set(decodedKeystore)
+}
+
+if (releaseKeystoreBase64 != null) {
+    tasks.configureEach {
+        val signsJaecoo = name.contains("Jaecoo", ignoreCase = true) &&
+            (
+                name.startsWith("validateSigning") ||
+                    name.startsWith("assemble") ||
+                    name.startsWith("bundle")
+                )
+        if (signsJaecoo || name == "signingReport") {
+            dependsOn(prepareJaecooSigning)
+        }
+        if ((name.startsWith("assemble") || name.startsWith("bundle")) &&
+            name.contains("Jaecoo", ignoreCase = true) ||
+            name == "signingReport"
+        ) {
+            finalizedBy(cleanJaecooSigning)
+        }
+    }
 }
 
 val lastCommitHash = providers.exec {
@@ -79,7 +191,29 @@ configure<ApplicationExtension> {
     }
 
     signingConfigs {
-        if (File("signing.properties").exists()) {
+        create("jaecoo") {
+            if (environmentSigningConfigured) {
+                storeFile = file(requireNotNull(releaseKeystorePath))
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            } else {
+                // Never let a Jaecoo variant inherit the public debug key.
+                storeFile =
+                    layout.buildDirectory.file("missing-jaecoo-release-keystore").get().asFile
+                storePassword = "missing"
+                keyAlias = "missing"
+                keyPassword = "missing"
+            }
+        }
+        if (environmentSigningConfigured) {
+            create("release") {
+                storeFile = file(requireNotNull(releaseKeystorePath))
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        } else if (File("signing.properties").exists()) {
             create("release") {
                 val properties = Properties().apply {
                     File("signing.properties").inputStream().use { load(it) }
@@ -109,7 +243,7 @@ configure<ApplicationExtension> {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (File("signing.properties").exists()) {
+            if (signingConfigs.names.contains("release")) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
@@ -147,6 +281,13 @@ configure<ApplicationExtension> {
             versionNameSuffix = "-preload"
             buildConfigField("Boolean", "SHOW_ANONYMOUS_LOGIN", "true")
         }
+
+        // Jaecoo devices use the privileged jconfig installation bridge.
+        create("jaecoo") {
+            dimension = "device"
+            buildConfigField("Boolean", "SHOW_ANONYMOUS_LOGIN", "true")
+            signingConfig = signingConfigs.getByName("jaecoo")
+        }
     }
 
     buildFeatures {
@@ -175,6 +316,14 @@ androidComponents {
         if ((flavour == "huawei" || flavour == "preload") && variant.buildType == "nightly") {
             variant.enable = false
         }
+    }
+
+    onVariants(selector().withFlavor("device" to "jaecoo")) { variant ->
+        // jconfig authenticates the caller by this exact package, including dev builds.
+        variant.applicationId.set("com.aurora.store")
+        variant.signingConfig.setConfig(
+            extensions.getByType<ApplicationExtension>().signingConfigs.getByName("jaecoo")
+        )
     }
 }
 

@@ -6,6 +6,9 @@
   -->
 <lint>
     <issue id="MissingTranslation" severity="ignore" />
+    <!-- permissions_required is a generic title and intentionally omits the count. -->
+    <issue id="MissingQuantity" severity="ignore" />
+    <issue id="ImpliedQuantity" severity="ignore" />
     <issue id="ProtectedPermissions" severity="ignore" />
     <issue id="QueryAllPackagesPermission" severity="ignore" />
     <issue id="ScopedStorage" severity="ignore" />
