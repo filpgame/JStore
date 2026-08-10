@@ -104,7 +104,7 @@ if (requestedJaecooBuild && !environmentSigningConfigured) {
 }
 
 val prepareJaecooSigning = tasks.register<PrepareJaecooSigning>("prepareJaecooSigning") {
-    encodedKeystore.set(releaseKeystoreBase64)
+    releaseKeystoreBase64?.let(encodedKeystore::set)
     outputFile.set(decodedKeystore)
 }
 val cleanJaecooSigning = tasks.register<CleanJaecooSigning>("cleanJaecooSigning") {
@@ -122,10 +122,7 @@ if (releaseKeystoreBase64 != null) {
         if (signsJaecoo || name == "signingReport") {
             dependsOn(prepareJaecooSigning)
         }
-        if ((name.startsWith("assemble") || name.startsWith("bundle")) &&
-            name.contains("Jaecoo", ignoreCase = true) ||
-            name == "signingReport"
-        ) {
+        if (signsJaecoo || name == "signingReport") {
             finalizedBy(cleanJaecooSigning)
         }
     }

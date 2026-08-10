@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -219,8 +220,13 @@ class JaecooInstaller @Inject constructor(
     private fun connect(): IJaecooInstallerBridge? {
         bridge?.let { return it }
         val latch = CountDownLatch(1)
+        val timedOut = AtomicBoolean(false)
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+                if (timedOut.get()) {
+                    runCatching { appContext.unbindService(this) }
+                    return
+                }
                 bridge = IJaecooInstallerBridge.Stub.asInterface(binder)
                 latch.countDown()
             }
@@ -231,7 +237,18 @@ class JaecooInstaller @Inject constructor(
         }
         val intent = Intent(BRIDGE_ACTION).setPackage(BRIDGE_PACKAGE)
         if (!appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)) return null
-        latch.await(BIND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        val connected = try {
+            latch.await(BIND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (exception: InterruptedException) {
+            Thread.currentThread().interrupt()
+            false
+        }
+        if (!connected) {
+            timedOut.set(true)
+            bridge = null
+            runCatching { appContext.unbindService(connection) }
+            return null
+        }
         return bridge
     }
 
