@@ -60,7 +60,8 @@ class AppInstaller @Inject constructor(
     private val serviceInstaller: ServiceInstaller,
     private val amInstaller: AMInstaller,
     private val shizukuInstaller: ShizukuInstaller,
-    private val microGInstaller: MicroGInstaller
+    private val microGInstaller: MicroGInstaller,
+    private val jaecooInstaller: JaecooInstaller
 ) {
 
     companion object {
@@ -74,8 +75,11 @@ class AppInstaller @Inject constructor(
         const val EXTRA_DISPLAY_NAME =
             "com.aurora.store.data.installer.AppInstaller.EXTRA_DISPLAY_NAME"
 
-        fun getCurrentInstaller(context: Context): Installer =
+        fun getCurrentInstaller(context: Context): Installer = if (BuildConfig.FLAVOR == "jaecoo") {
+            Installer.JAECOO
+        } else {
             Installer.entries[Preferences.getInteger(context, PREFERENCE_INSTALLER_ID)]
+        }
 
         fun getAvailableInstallersInfo(context: Context): List<InstallerInfo> = listOfNotNull(
             SessionInstaller.installerInfo,
@@ -138,6 +142,10 @@ class AppInstaller @Inject constructor(
                 Installer.SHIZUKU -> isOAndAbove && hasShizukuOrSui(context) && hasShizukuPerm()
 
                 Installer.MICROG -> false
+
+                // The Jaecoo bridge is the mandatory privileged route for this flavor.
+                // Bridge failures are surfaced asynchronously by JaecooInstaller.
+                Installer.JAECOO -> true
             }
         }
 
@@ -243,9 +251,14 @@ class AppInstaller @Inject constructor(
             } else {
                 defaultInstaller
             }
+
+            Installer.JAECOO -> jaecooInstaller
         }
 
-        if (selected != Installer.SESSION && installer === defaultInstaller) {
+        if (selected != Installer.SESSION &&
+            selected != Installer.JAECOO &&
+            installer === defaultInstaller
+        ) {
             Log.i(TAG, "$selected installer unavailable, falling back to session installer")
             if (notifyOnFallback) context.toast(R.string.installer_fallback_session)
         }

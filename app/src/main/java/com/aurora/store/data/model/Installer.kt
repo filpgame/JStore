@@ -10,5 +10,8 @@ enum class Installer {
     SERVICE,
     AM,
     SHIZUKU,
-    MICROG
+    MICROG,
+
+    // Keep this entry last: installer preferences persist enum ordinals.
+    JAECOO
 }

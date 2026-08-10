@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vanilla:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+      - name: Test, style-check, and build vanilla
+        run: >-
+          ./gradlew
+          testVanillaDebugUnitTest
+          ktlintCheck
+          assembleVanillaDebug
+          --no-daemon
+          -Dorg.gradle.java.home=$JAVA_HOME

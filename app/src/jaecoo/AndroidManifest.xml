@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Aurora Store contributors -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="com.frodrigues.jconfig.permission.JAECOO_INSTALLER" />
+
+    <queries>
+        <package android:name="com.frodrigues.jconfig" />
+    </queries>
+</manifest>
