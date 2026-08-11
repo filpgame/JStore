@@ -136,6 +136,9 @@ val lastCommitTimestamp = providers.exec {
     commandLine("git", "log", "-1", "--format=%ct")
 }.standardOutput.asText.map { it.trim() }
 
+val appVersionName = providers.gradleProperty("versionName").orNull ?: "4.8.4"
+val appVersionCode = providers.gradleProperty("versionCode").orNull?.toIntOrNull() ?: 76
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -175,8 +178,8 @@ configure<ApplicationExtension> {
             version = release(37)
         }
 
-        versionCode = 76
-        versionName = "4.8.4"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "com.aurora.store.HiltInstrumentationTestRunner"
         testInstrumentationRunnerArguments["disableAnalytics"] = "true"
