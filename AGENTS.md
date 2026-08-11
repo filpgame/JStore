@@ -13,7 +13,9 @@ external [`gplayapi`](https://gitlab.com/AuroraOSS/gplayapi) library
 changes server behavior.
 
 - Package / applicationId: `com.aurora.store`
-- Current version: `4.8.4` (versionCode 76) — defined in `app/build.gradle.kts`
+- Current version defaults: `4.8.4` (versionCode 76) — `app/build.gradle.kts`
+  accepts `-PversionName` and `-PversionCode` overrides; tag-release CI injects
+  them while local builds retain these defaults.
 - minSdk 23, targetSdk/compileSdk 37
 - Language: Kotlin (single Java file: `util/AC2DMUtil.java`, plus Huawei flavor stubs)
 - UI: Jetpack Compose with Material 3 (no XML layouts; the app is fully Compose-based)
@@ -146,6 +148,17 @@ Notes:
 - CI (`.gitlab-ci.yml`) has three stages: build (`assembleVanillaDebug`), lint
   (`ktlintCheck`), and upload of the vanilla debug APK to the GitLab Package
   Registry on the default branch. Android lint is not part of CI.
+- GitHub Actions `build-release` runs on `v*` tags (or by manual dispatch for an
+  existing tag). It builds and signs `assembleJaecooRelease`, derives
+  `versionName` by stripping the leading `v`, uses `github.run_number` for
+  `versionCode`, verifies the APK signature, and publishes the APK plus
+  `version.json` to GitHub Releases and the JConfig update service. Beta tags
+  matching `-beta[0-9]*` are marked as prereleases.
+- The release workflow requires `RELEASE_KEYSTORE_BASE64`,
+  `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`,
+  and `JCONFIG_RELEASE_UPLOAD_TOKEN` repository secrets. The keystore is
+  decoded into the runner's temporary directory and removed in an `always()`
+  cleanup step.
 - Stable releases are published manually to GitLab Releases, F-Droid, IzzyOnDroid
   and Huawei App Gallery; store metadata and per-version changelogs live in
   `fastlane/metadata/android/`.

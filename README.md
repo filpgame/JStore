@@ -53,6 +53,19 @@ Please only download the latest stable releases from one of these sources:
 
 You can also get latest debug builds signed with AOSP test keys for testing latest changes from our [GitLab Package Registry](https://gitlab.com/AuroraOSS/AuroraStore/-/packages/24103616).
 
+### Jaecoo releases
+
+Maintainers publish a signed Jaecoo APK by pushing a `v*` tag. The
+`build-release` GitHub Actions workflow derives `versionName` from the tag (for
+example, `v4.8.5` becomes `4.8.5`) and uses the GitHub Actions run number as
+`versionCode`. It verifies the signature, attaches the APK and `version.json`
+to the GitHub Release, and publishes it to the JConfig update service.
+
+For an exceptional rerun, use **Run workflow** and provide the existing `v*`
+tag to build. The workflow requires the repository secrets
+`RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`,
+`RELEASE_KEY_PASSWORD`, and `JCONFIG_RELEASE_UPLOAD_TOKEN`.
+
 ## Certificate Fingerprints
 
 - SHA1: 94:42:75:D7:59:8B:C0:3E:48:85:06:06:42:25:A7:19:90:A2:22:02
