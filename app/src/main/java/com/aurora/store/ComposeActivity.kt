@@ -41,7 +41,6 @@ import com.aurora.store.data.providers.NetworkProvider
 import com.aurora.store.data.receiver.MigrationReceiver
 import com.aurora.store.util.AppLockAuthenticator
 import com.aurora.store.util.PackageUtil
-import com.aurora.store.util.Preferences
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -162,10 +161,7 @@ class ComposeActivity : FragmentActivity() {
         return defaultStart()
     }
 
-    private fun defaultStart(): Screen = when {
-        !Preferences.getBoolean(this, Preferences.PREFERENCE_INTRO) -> Screen.Onboarding
-        else -> Screen.Splash()
-    }
+    private fun defaultStart(): Screen = Screen.Splash()
 
     private enum class LockState { AUTHENTICATING, LOCKED, UNLOCKED }
 }

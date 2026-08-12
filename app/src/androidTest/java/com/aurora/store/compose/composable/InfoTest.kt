@@ -23,7 +23,7 @@ class InfoTest : IsolatedTest() {
             Info(title = AnnotatedString(text = stringResource(R.string.app_name)))
         }
 
-        composeTestRule.onNodeWithText("Aurora Store")
+        composeTestRule.onNodeWithText("JStore")
             .assertIsDisplayed()
             .assertHasClickAction()
             .assertIsNotEnabled()
