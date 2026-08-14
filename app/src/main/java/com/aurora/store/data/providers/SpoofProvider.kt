@@ -20,6 +20,7 @@
 package com.aurora.store.data.providers
 
 import android.content.Context
+import com.aurora.store.BuildConfig
 import com.aurora.store.R
 import com.aurora.store.util.Preferences
 import com.aurora.store.util.Preferences.PREFERENCE_VENDING_VERSION
@@ -46,6 +47,11 @@ class SpoofProvider @Inject constructor(
 
         private const val DEVICE_SPOOF_ENABLED = "DEVICE_SPOOF_ENABLED"
         private const val DEVICE_SPOOF_PROPERTIES = "DEVICE_SPOOF_PROPERTIES"
+
+        // The vehicle's native DesaySV profile is not recognised by Google Play. Keep this
+        // aligned with Android 11 and the head unit's arm64 ABI until it has its own catalog
+        // profile.
+        private const val JAECOO_DEFAULT_DEVICE_CONFIG = "res/raw/gplayapi_poco_f1.properties"
     }
 
     val availableSpoofDeviceProperties get() = availableDeviceProperties
@@ -59,11 +65,21 @@ class SpoofProvider @Inject constructor(
             val currentProperties = if (isDeviceSpoofEnabled) {
                 spoofDeviceProperties
             } else {
-                NativeDeviceInfoProvider.getNativeDeviceProperties(context)
+                defaultDeviceProperties
             }
             setVendingVersion(currentProperties)
             return currentProperties
         }
+
+    private val defaultDeviceProperties: Properties by lazy {
+        if (BuildConfig.FLAVOR == "jaecoo") {
+            availableDeviceProperties.firstOrNull {
+                it.getProperty("CONFIG_NAME") == JAECOO_DEFAULT_DEVICE_CONFIG
+            } ?: NativeDeviceInfoProvider.getNativeDeviceProperties(context)
+        } else {
+            NativeDeviceInfoProvider.getNativeDeviceProperties(context)
+        }
+    }
 
     val locale: Locale
         get() = if (isLocaleSpoofEnabled) {

@@ -105,9 +105,16 @@ class AuthProvider @Inject constructor(
             ?: AuthData("BOGUS")
 
     /**
-     * Checks whether saved AuthData is valid or not
+     * Checks whether saved AuthData is valid for the current device profile.
+     *
+     * A Play session includes the device configuration used during check-in. Reuse it only
+     * when the active spoof profile matches, otherwise the next authentication refresh must
+     * register the current profile with Google Play.
      */
-    fun isSavedAuthDataValid(): Boolean = AuthHelper.using(httpClient).isValid(authData!!)
+    fun isSavedAuthDataValid(): Boolean = authData?.let { savedAuthData ->
+        savedAuthData.deviceInfoProvider?.properties == spoofProvider.deviceProperties &&
+            AuthHelper.using(httpClient).isValid(savedAuthData)
+    } ?: false
 
     /**
      * Builds [AuthData] for login using personal Google account

@@ -33,7 +33,10 @@ case "$build_id" in
   *) echo "unsupported vehicle build (SOP6 required): $build_id" >&2; exit 68 ;;
 esac
 
-owners="$(adb -s "$serial" shell dpm list-owners 2>/dev/null || adb -s "$serial" shell dumpsys device_policy)"
+owners="$(
+  adb -s "$serial" shell dpm list-owners 2>/dev/null || true
+  adb -s "$serial" shell dumpsys device_policy 2>/dev/null || true
+)"
 printf '%s\n' "$owners" | grep -q 'com.frodrigues.jconfig' || {
   echo "jconfig is not the current Device Owner; deploy blocked" >&2
   exit 70
