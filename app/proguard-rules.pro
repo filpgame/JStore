@@ -119,6 +119,7 @@
 
 # Keep Parcelable classes
 -keep @kotlinx.parcelize.Parcelize public class *
+-keep class com.jaecoo.installer.bridge.** { *; }
 
 # Keep the view binding classes and their methods
 -keepclassmembers class ** implements androidx.viewbinding.ViewBinding {

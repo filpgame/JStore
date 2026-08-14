@@ -71,14 +71,15 @@ class SpoofProvider @Inject constructor(
             return currentProperties
         }
 
-    private val defaultDeviceProperties: Properties
-        get() = if (BuildConfig.FLAVOR == "jaecoo") {
+    private val defaultDeviceProperties: Properties by lazy {
+        if (BuildConfig.FLAVOR == "jaecoo") {
             availableDeviceProperties.firstOrNull {
                 it.getProperty("CONFIG_NAME") == JAECOO_DEFAULT_DEVICE_CONFIG
             } ?: NativeDeviceInfoProvider.getNativeDeviceProperties(context)
         } else {
             NativeDeviceInfoProvider.getNativeDeviceProperties(context)
         }
+    }
 
     val locale: Locale
         get() = if (isLocaleSpoofEnabled) {
