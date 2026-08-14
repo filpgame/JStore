@@ -25,12 +25,12 @@ class DispenserViewModel @Inject constructor(
 
     private var _dispensers: Set<String>
         set(value) = sharedPreferences.edit { putStringSet(PREFERENCE_DISPENSER_URLS, value) }
-        get() = sharedPreferences.getStringSet(PREFERENCE_DISPENSER_URLS, emptySet()) ?: emptySet()
+        get() = Preferences.getStringSet(context, PREFERENCE_DISPENSER_URLS)
 
     val dispensers = sharedPreferences.observeAsStateFlow(
         key = PREFERENCE_DISPENSER_URLS,
         scope = viewModelScope,
-        initial = emptySet(),
+        initial = Preferences.getStringSet(context, PREFERENCE_DISPENSER_URLS),
         valueProvider = { _dispensers }
     )
 

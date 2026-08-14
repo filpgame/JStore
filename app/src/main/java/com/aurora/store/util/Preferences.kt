@@ -97,6 +97,33 @@ object Preferences {
 
     private var prefs: SharedPreferences? = null
 
+    private fun defaultBoolean(key: String, fallback: Boolean): Boolean = when (key) {
+        PREFERENCE_FILTER_AURORA_ONLY,
+        PREFERENCE_UPDATES_EXTENDED -> false
+
+        PREFERENCE_FILTER_FDROID,
+        PREFERENCE_FOR_YOU,
+        PREFERENCE_AUTO_DELETE -> true
+
+        else -> fallback
+    }
+
+    private fun defaultInteger(key: String, fallback: Int): Int = when (key) {
+        PREFERENCE_VENDING_VERSION,
+        PREFERENCE_THEME_STYLE,
+        PREFERENCE_DEFAULT_SELECTED_TAB,
+        PREFERENCE_INSTALLER_ID -> 0
+
+        PREFERENCE_UPDATES_CHECK_INTERVAL -> 3
+
+        else -> fallback
+    }
+
+    private fun defaultStringSet(key: String, fallback: Set<String>): Set<String> = when (key) {
+        PREFERENCE_DISPENSER_URLS -> FlavouredUtil.defaultDispensers
+        else -> fallback
+    }
+
     fun getPrefs(context: Context): SharedPreferences = when (BuildConfig.FLAVOR) {
         "vanilla" -> {
             prefs ?: PreferenceManager.getDefaultSharedPreferences(context).also { prefs = it }
@@ -148,17 +175,20 @@ object Preferences {
         context: Context,
         key: String,
         default: Set<String> = emptySet()
-    ): Set<String> = getPrefs(context).getStringSet(key, default) ?: emptySet()
+    ): Set<String> = getPrefs(context).getStringSet(
+        key,
+        defaultStringSet(key, default)
+    ) ?: emptySet()
 
     fun getInteger(context: Context, key: String, default: Int = 0): Int =
-        getPrefs(context).getInt(key, default)
+        getPrefs(context).getInt(key, defaultInteger(key, default))
 
     fun getFloat(context: Context, key: String): Float = getPrefs(context).getFloat(key, 0.0f)
 
     fun getLong(context: Context, key: String): Long = getPrefs(context).getLong(key, 0L)
 
     fun getBoolean(context: Context, key: String, default: Boolean = false): Boolean =
-        getPrefs(context).getBoolean(key, default)
+        getPrefs(context).getBoolean(key, defaultBoolean(key, default))
 }
 
 /*Preference Extensions*/
