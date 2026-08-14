@@ -319,8 +319,9 @@ androidComponents {
     }
 
     onVariants(selector().withFlavor("device" to "jaecoo")) { variant ->
-        // jconfig authenticates this Jaeecoo client package, including dev builds.
-        variant.applicationId.set("com.frodrigues.jstore")
+        // jconfig authenticates this Jaecoo client package, including dev builds.
+        // Its bridge only accepts APK URIs from this package's FileProvider.
+        variant.applicationId.set("com.aurora.store")
         variant.signingConfig.setConfig(
             extensions.getByType<ApplicationExtension>().signingConfigs.getByName("jaecoo")
         )
