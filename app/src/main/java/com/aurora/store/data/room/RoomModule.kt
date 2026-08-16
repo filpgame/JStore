@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.aurora.store.data.room.MigrationHelper.MIGRATION_10_11
 import com.aurora.store.data.room.MigrationHelper.MIGRATION_11_12
+import com.aurora.store.data.room.MigrationHelper.MIGRATION_12_13
 import com.aurora.store.data.room.MigrationHelper.MIGRATION_1_2
 import com.aurora.store.data.room.MigrationHelper.MIGRATION_2_3
 import com.aurora.store.data.room.MigrationHelper.MIGRATION_3_4
@@ -16,6 +17,7 @@ import com.aurora.store.data.room.MigrationHelper.MIGRATION_9_10
 import com.aurora.store.data.room.account.AccountConverter
 import com.aurora.store.data.room.account.AccountDao
 import com.aurora.store.data.room.account.AppAccountBindingDao
+import com.aurora.store.data.room.catalog.StoreCatalogDao
 import com.aurora.store.data.room.download.DownloadConverter
 import com.aurora.store.data.room.download.DownloadDao
 import com.aurora.store.data.room.exodus.TrackerDao
@@ -54,7 +56,8 @@ object RoomModule {
             MIGRATION_8_9,
             MIGRATION_9_10,
             MIGRATION_10_11,
-            MIGRATION_11_12
+            MIGRATION_11_12,
+            MIGRATION_12_13
         )
         .addTypeConverter(downloadConverter)
         .addTypeConverter(accountConverter)
@@ -87,4 +90,8 @@ object RoomModule {
 
     @Provides
     fun providesTrackerDao(auroraDatabase: AuroraDatabase): TrackerDao = auroraDatabase.trackerDao()
+
+    @Provides
+    fun providesStoreCatalogDao(auroraDatabase: AuroraDatabase): StoreCatalogDao =
+        auroraDatabase.storeCatalogDao()
 }

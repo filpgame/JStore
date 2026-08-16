@@ -64,12 +64,14 @@ fun InstalledScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val installers by viewModel.installers.collectAsStateWithLifecycle()
     val metadata by viewModel.metadata.collectAsStateWithLifecycle()
+    val originalPackages by viewModel.originalPackages.collectAsStateWithLifecycle()
 
     ScreenContent(
         apps = apps,
         state = state,
         installers = installers,
         metadata = metadata,
+        originalPackages = originalPackages,
         onStateChange = viewModel::updateState,
         onNavigateTo = onNavigateTo
     )
@@ -81,6 +83,7 @@ private fun ScreenContent(
     state: SortFilterState = SortFilterState(),
     installers: Map<String, String> = emptyMap(),
     metadata: Map<String, InstalledAppMeta> = emptyMap(),
+    originalPackages: Map<String, String> = emptyMap(),
     onStateChange: (SortFilterState) -> Unit = {},
     onNavigateTo: (Destination) -> Unit = {}
 ) {
@@ -150,7 +153,10 @@ private fun ScreenContent(
                                                 ?.let { installers[it] },
                                             onClick = {
                                                 onNavigateTo(
-                                                    Destination.AppDetails(app.packageName)
+                                                    Destination.AppDetails(
+                                                        originalPackages[app.packageName]
+                                                            ?: app.packageName
+                                                    )
                                                 )
                                             }
                                         )

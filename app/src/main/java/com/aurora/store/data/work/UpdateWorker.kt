@@ -16,6 +16,8 @@ import com.aurora.extensions.isIgnoringBatteryOptimizations
 import com.aurora.gplayapi.data.models.App
 import com.aurora.gplayapi.helpers.AppDetailsHelper
 import com.aurora.store.BuildConfig
+import com.aurora.store.data.StoreCatalogRepository
+import com.aurora.store.data.StoreCatalogUnavailableException
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.helper.UpdateHelper
 import com.aurora.store.data.installer.AppInstaller
@@ -64,6 +66,7 @@ class UpdateWorker @AssistedInject constructor(
     private val authProvider: AuthProvider,
     tokenProvider: GoogleAccountTokenProvider,
     private val appDetailsHelper: AppDetailsHelper,
+    private val storeCatalogRepository: StoreCatalogRepository,
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : AuthWorker(authProvider, tokenProvider, context, workerParams) {
@@ -176,6 +179,14 @@ class UpdateWorker @AssistedInject constructor(
      */
     private suspend fun checkUpdates(): List<Update> {
         return withContext(Dispatchers.IO) {
+            val catalogRefresh = storeCatalogRepository.refresh()
+            if (catalogRefresh.isFailure && !storeCatalogRepository.hasValidSnapshot()) {
+                throw StoreCatalogUnavailableException(catalogRefresh.exceptionOrNull())
+            }
+            val catalogEntries = storeCatalogRepository.getEntries()
+            val catalogPackages = catalogEntries.flatMap {
+                listOf(it.originalPackageId, it.customPackageId)
+            }.toSet()
             val packages = PackageUtil.getAllValidPackages(context)
                 .filterNot { blacklistProvider.isBlacklisted(it.packageName) }
                 .filter { if (!isExtendedUpdateEnabled) it.applicationInfo!!.enabled else true }
@@ -185,7 +196,7 @@ class UpdateWorker @AssistedInject constructor(
                 context,
                 Preferences.PREFERENCE_FILTER_INSTALLERS
             )
-            val filteredPackages = if (isAuroraOnlyFilterEnabled) {
+            val eligiblePackages = if (isAuroraOnlyFilterEnabled) {
                 packages.filter { CertUtil.isAuroraStoreApp(context, it.packageName) }
             } else {
                 packages.filterNot { pkg ->
@@ -202,7 +213,9 @@ class UpdateWorker @AssistedInject constructor(
                         false
                     }
                 }
-            }.map { it.packageName }
+            }
+            val eligiblePackageNames = eligiblePackages.map { it.packageName }.toSet()
+            val filteredPackages = eligiblePackageNames.filterNot { it in catalogPackages }
 
             // HyperOS and GrapheneOS block third-party updates of pristine system apps.
             val osBlocksSystemAppUpdates = isHyperOS || isGrapheneOS
@@ -234,13 +247,29 @@ class UpdateWorker @AssistedInject constructor(
                 updateDao.delete(context.packageName)
             }
 
-            return@withContext updates.map {
+            val playUpdates = updates.map {
                 Update.fromApp(
                     context,
                     it,
                     isIncompatible = it.packageName in pristineSystemPackages
                 )
-            }.sortedBy { it.displayName.lowercase(Locale.getDefault()) }
+            }
+            val catalogUpdates = catalogEntries
+                .filter {
+                    it.customPackageId in eligiblePackageNames &&
+                        PackageUtil.isUpdatable(context, it.customPackageId, it.versionCode)
+                }
+                .map { entry ->
+                    val validSigner = entry.signerSha256 in
+                        CertUtil.getCertificateSha256Hashes(context, entry.customPackageId)
+                    entry.toUpdate(
+                        hasValidCert = validSigner,
+                        isIncompatible = entry.customPackageId in pristineSystemPackages
+                    )
+                }
+
+            return@withContext (playUpdates + catalogUpdates)
+                .sortedBy { it.displayName.lowercase(Locale.getDefault()) }
         }
     }
 

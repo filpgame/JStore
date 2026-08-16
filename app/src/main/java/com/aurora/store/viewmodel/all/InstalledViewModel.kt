@@ -38,9 +38,11 @@ import com.aurora.store.compose.ui.commons.applySort
 import com.aurora.store.compose.ui.commons.loadSortFilterState
 import com.aurora.store.compose.ui.commons.save
 import com.aurora.store.data.PageResult
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.paging.GenericPagingSource
 import com.aurora.store.data.paging.GenericPagingSource.Companion.manualPager
 import com.aurora.store.data.providers.BlacklistProvider
+import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.util.PackageUtil
 import com.aurora.store.util.Preferences
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,7 +62,8 @@ import kotlinx.coroutines.launch
 class InstalledViewModel @Inject constructor(
     blacklistProvider: BlacklistProvider,
     @ApplicationContext private val context: Context,
-    private val webAppDetailsHelper: WebAppDetailsHelper
+    private val webAppDetailsHelper: WebAppDetailsHelper,
+    private val storeCatalogRepository: StoreCatalogRepository
 ) : ViewModel() {
 
     private val blacklist = blacklistProvider.blacklist
@@ -77,6 +80,11 @@ class InstalledViewModel @Inject constructor(
     private val _metadata = MutableStateFlow<Map<String, InstalledAppMeta>>(emptyMap())
     val metadata = _metadata.asStateFlow()
 
+    private val _originalPackages = MutableStateFlow<Map<String, String>>(emptyMap())
+    val originalPackages = _originalPackages.asStateFlow()
+
+    private var catalogByCustomPackage: Map<String, StoreCatalogEntry> = emptyMap()
+
     /**
      * Enumerates installed packages and resolves per-package metadata used for sorting
      * and filtering. Done lazily on [Dispatchers.IO] so the VM constructor stays cheap;
@@ -86,6 +94,10 @@ class InstalledViewModel @Inject constructor(
         context = Dispatchers.IO,
         start = CoroutineStart.LAZY
     ) {
+        storeCatalogRepository.refresh()
+        catalogByCustomPackage = storeCatalogRepository.getEntries()
+            .associateBy { it.customPackageId }
+        _originalPackages.value = catalogByCustomPackage.mapValues { it.value.originalPackageId }
         val pm = context.packageManager
         val packages = pm.getInstalledPackages(PackageManager.GET_META_DATA)
             .filter { it.isValidApp(pm) }
@@ -121,7 +133,17 @@ class InstalledViewModel @Inject constructor(
                 manualPager(pageSize = GenericPagingSource.DEFAULT_PAGE_SIZE) { page ->
                     val chunk = chunks.getOrNull(page - 1)
                         ?: return@manualPager PageResult(emptyList<App>(), hasMore = false)
-                    val items = webAppDetailsHelper.getAppDetails(chunk.map { it.packageName })
+                    val regularPackages = chunk
+                        .filterNot { it.packageName in catalogByCustomPackage }
+                        .map { it.packageName }
+                    val playApps = webAppDetailsHelper.getAppDetails(regularPackages)
+                        .associateBy { it.packageName }
+                    val items = chunk.mapNotNull { installed ->
+                        catalogByCustomPackage[installed.packageName]
+                            ?.toDisplayApp()
+                            ?.copy(isInstalled = true)
+                            ?: playApps[installed.packageName]
+                    }
                     PageResult(items, hasMore = page < chunks.size)
                 }.flow
                     .distinctUntilChanged()

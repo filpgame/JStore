@@ -15,9 +15,11 @@ import com.aurora.extensions.TAG
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.AuroraApp
 import com.aurora.store.data.AccountRepository
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.model.DownloadStatus
+import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.data.room.download.DownloadDao
 import com.aurora.store.data.room.suite.ExternalApk
@@ -42,7 +44,8 @@ class DownloadHelper @Inject constructor(
     @ApplicationContext private val context: Context,
     private val downloadDao: DownloadDao,
     private val appInstaller: AppInstaller,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val storeCatalogRepository: StoreCatalogRepository
 ) {
 
     companion object {
@@ -157,7 +160,16 @@ class DownloadHelper @Inject constructor(
      * @param app [App] to download
      */
     suspend fun enqueueApp(app: App) {
-        enqueue(Download.fromApp(app))
+        val catalogEntry = storeCatalogRepository.resolveForDownload(app.packageName)
+        if (catalogEntry != null) {
+            enqueueStoreCatalog(catalogEntry)
+        } else {
+            enqueue(Download.fromApp(app))
+        }
+    }
+
+    suspend fun enqueueStoreCatalog(entry: StoreCatalogEntry) {
+        enqueue(Download.fromExternalApk(entry.toExternalApk()))
     }
 
     /**
