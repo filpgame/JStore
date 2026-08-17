@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -84,6 +85,7 @@ class InstalledViewModel @Inject constructor(
     val originalPackages = _originalPackages.asStateFlow()
 
     private var catalogByCustomPackage: Map<String, StoreCatalogEntry> = emptyMap()
+    private var hasUsableCatalogSnapshot = false
 
     /**
      * Enumerates installed packages and resolves per-package metadata used for sorting
@@ -94,9 +96,14 @@ class InstalledViewModel @Inject constructor(
         context = Dispatchers.IO,
         start = CoroutineStart.LAZY
     ) {
-        storeCatalogRepository.refresh()
-        catalogByCustomPackage = storeCatalogRepository.getEntries()
-            .associateBy { it.customPackageId }
+        val refreshResult = storeCatalogRepository.refresh()
+        hasUsableCatalogSnapshot = refreshResult.isSuccess ||
+            storeCatalogRepository.hasValidSnapshot()
+        catalogByCustomPackage = if (hasUsableCatalogSnapshot) {
+            storeCatalogRepository.getEntries().associateBy { it.customPackageId }
+        } else {
+            emptyMap()
+        }
         _originalPackages.value = catalogByCustomPackage.mapValues { it.value.originalPackageId }
         val pm = context.packageManager
         val packages = pm.getInstalledPackages(PackageManager.GET_META_DATA)
@@ -133,16 +140,24 @@ class InstalledViewModel @Inject constructor(
                 manualPager(pageSize = GenericPagingSource.DEFAULT_PAGE_SIZE) { page ->
                     val chunk = chunks.getOrNull(page - 1)
                         ?: return@manualPager PageResult(emptyList<App>(), hasMore = false)
-                    val regularPackages = chunk
-                        .filterNot { it.packageName in catalogByCustomPackage }
-                        .map { it.packageName }
-                    val playApps = webAppDetailsHelper.getAppDetails(regularPackages)
-                        .associateBy { it.packageName }
+                    val regularPackages = if (hasUsableCatalogSnapshot) {
+                        chunk.filterNot { it.packageName in catalogByCustomPackage }
+                            .map { it.packageName }
+                    } else {
+                        emptyList()
+                    }
+                    val playApps = if (regularPackages.isEmpty()) {
+                        emptyMap()
+                    } else {
+                        webAppDetailsHelper.getAppDetails(regularPackages)
+                            .associateBy { it.packageName }
+                    }
                     val items = chunk.mapNotNull { installed ->
                         catalogByCustomPackage[installed.packageName]
                             ?.toDisplayApp()
                             ?.copy(isInstalled = true)
                             ?: playApps[installed.packageName]
+                            ?: installed.toLocalApp()
                     }
                     PageResult(items, hasMore = page < chunks.size)
                 }.flow
@@ -176,6 +191,15 @@ class InstalledViewModel @Inject constructor(
         override val packageName: String get() = info.packageName
         override val firstInstallTime: Long get() = info.firstInstallTime
         override val lastUpdateTime: Long get() = info.lastUpdateTime
+
+        fun toLocalApp() = App(
+            packageName = packageName,
+            versionCode = PackageInfoCompat.getLongVersionCode(info),
+            versionName = info.versionName.orEmpty(),
+            displayName = label,
+            size = sizeBytes,
+            isInstalled = true
+        )
     }
 
     companion object {

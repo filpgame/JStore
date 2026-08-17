@@ -11,11 +11,13 @@ import com.aurora.extensions.TAG
 import com.aurora.extensions.isVAndAbove
 import com.aurora.gplayapi.helpers.AppDetailsHelper
 import com.aurora.store.AuroraApp
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.providers.AccountProvider
 import com.aurora.store.util.NotificationUtil
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -30,6 +32,9 @@ class UnarchivePackageReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var downloadHelper: DownloadHelper
+
+    @Inject
+    lateinit var storeCatalogRepository: StoreCatalogRepository
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (isVAndAbove && context != null && intent?.action == Intent.ACTION_UNARCHIVE_PACKAGE) {
@@ -48,8 +53,25 @@ class UnarchivePackageReceiver : BroadcastReceiver() {
                     return@launch
                 }
 
-                val app = appDetailsHelper.getAppByPackageName(packageName)
-                downloadHelper.enqueueApp(app)
+                try {
+                    val catalogEntry = storeCatalogRepository.resolveForDownload(packageName)
+                    if (catalogEntry != null) {
+                        downloadHelper.enqueueStoreCatalog(catalogEntry)
+                    } else {
+                        val app = appDetailsHelper.getAppByPackageName(packageName)
+                        downloadHelper.enqueueApp(app)
+                    }
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    Log.e(TAG, "Failed to enqueue unarchive for $packageName", exception)
+                    with(context.getSystemService<NotificationManager>()!!) {
+                        notify(
+                            packageName.hashCode(),
+                            NotificationUtil.getUnarchiveFailureNotification(context, packageName)
+                        )
+                    }
+                }
             }
         }
     }

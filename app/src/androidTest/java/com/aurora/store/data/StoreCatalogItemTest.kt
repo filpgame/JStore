@@ -5,6 +5,9 @@
 
 package com.aurora.store.data
 
+import com.aurora.store.compose.ui.apps.matches
+import com.aurora.store.data.model.DownloadStatus
+import com.aurora.store.data.room.download.Download
 import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertThrows
@@ -49,6 +52,74 @@ class StoreCatalogItemTest {
     }
 
     @Test
+    fun rejectsPathTraversalInPackageAndApkNames() {
+        assertThrows(IllegalArgumentException::class.java) {
+            item(customPackageId = "../../data/local/tmp").toEntity()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            item(apkName = "../payload.apk").toEntity()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            item(apkName = "folder/payload.apk").toEntity()
+        }
+    }
+
+    @Test
+    fun externalDownloadRetainsArtifactMetadataAndInstalledState() {
+        val entry = item().toEntity()
+        val before = System.currentTimeMillis()
+
+        val download = Download.fromExternalApk(entry.toExternalApk(), isInstalled = true)
+
+        assertThat(download.isInstalled).isTrue()
+        assertThat(download.size).isEqualTo(entry.sizeBytes)
+        assertThat(download.downloadedAt).isAtLeast(before)
+    }
+
+    @Test
+    fun failedDownloadOnlyMatchesTheCurrentCatalogArtifact() {
+        val entry = item().toEntity()
+        val current = Download.fromExternalApk(entry.toExternalApk(), isInstalled = false)
+            .copy(status = DownloadStatus.FAILED)
+        val stale = current.copy(versionCode = entry.versionCode - 1)
+
+        assertThat(current.matches(entry)).isTrue()
+        assertThat(stale.matches(entry)).isFalse()
+    }
+
+    @Test
+    fun downloadArtifactIdentityRejectsRepublishedHashAtSameVersion() {
+        val entry = item().toEntity()
+        val current = Download.fromExternalApk(entry.toExternalApk(), isInstalled = false)
+        val republished = current.copy(
+            fileList = current.fileList.map { it.copy(sha256 = "c".repeat(64)) }
+        )
+
+        assertThat(current.hasSameArtifactAs(current.copy())).isTrue()
+        assertThat(current.hasSameArtifactAs(republished)).isFalse()
+    }
+
+    @Test
+    fun downloadArtifactIdentityPreservesUnresolvedPlayAndStableSha1() {
+        val entry = item().toEntity()
+        val current = Download.fromExternalApk(entry.toExternalApk(), isInstalled = false)
+        val unresolved = current.copy(fileList = emptyList())
+        val sha1File = current.fileList.single().copy(
+            sha256 = "",
+            sha1 = "d".repeat(40),
+            url = "https://downloads.example.com/old.apk"
+        )
+        val rotatedUrl = sha1File.copy(url = "https://downloads.example.com/new.apk")
+
+        assertThat(current.hasSameArtifactAs(unresolved)).isTrue()
+        assertThat(
+            current.copy(fileList = listOf(sha1File)).hasSameArtifactAs(
+                current.copy(fileList = listOf(rotatedUrl))
+            )
+        ).isTrue()
+    }
+
+    @Test
     fun acceptsNullableServerFields() {
         val response = Json.decodeFromString<StoreCatalogRepository.StoreCatalogResponse>(
             """{"generatedAt":null,"apps":[]}"""
@@ -86,7 +157,8 @@ class StoreCatalogItemTest {
         signerSha256: String = "b".repeat(64),
         deviceModels: List<String> = listOf("J7"),
         originalPackageId: String = "com.example.play",
-        customPackageId: String = "com.example.j7"
+        customPackageId: String = "com.example.j7",
+        apkName: String = "app.apk"
     ) = StoreCatalogRepository.StoreCatalogItem(
         originalPackageId = originalPackageId,
         customPackageId = customPackageId,
@@ -96,7 +168,7 @@ class StoreCatalogItemTest {
         iconUrl = "https://downloads.example.com/icon.png",
         versionCode = 2,
         versionName = "2.0",
-        apkName = "app.apk",
+        apkName = apkName,
         downloadUrl = "https://downloads.example.com/app.apk",
         sizeBytes = 1_024,
         sha256 = sha256,

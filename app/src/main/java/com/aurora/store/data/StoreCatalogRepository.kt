@@ -12,6 +12,7 @@ import com.aurora.store.data.room.catalog.StoreCatalogDao
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
@@ -31,6 +32,8 @@ class StoreCatalogRepository @Inject constructor(
         const val CATALOG_URL = "https://jconfig.app/v1/store/catalog?model=$DEVICE_MODEL"
 
         private val SHA256 = Regex("^[a-fA-F0-9]{64}$")
+        private val PACKAGE_NAME = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$")
+        private val APK_NAME = Regex("^[A-Za-z0-9][A-Za-z0-9._-]*\\.apk$")
     }
 
     val entries: Flow<List<StoreCatalogEntry>> = catalogDao.entries()
@@ -39,17 +42,24 @@ class StoreCatalogRepository @Inject constructor(
 
     suspend fun refresh(): Result<List<StoreCatalogEntry>> = withContext(Dispatchers.IO) {
         refreshMutex.withLock {
-            runCatching {
+            try {
                 val response = httpClient.call(CATALOG_URL, mapOf("Cache-Control" to "no-cache"))
-                response.use {
-                    check(it.isSuccessful) { "Catalog request failed with HTTP ${it.code}" }
-                    val payload = json.decodeFromString<StoreCatalogResponse>(it.body.string())
-                    val entries = payload.apps.map(StoreCatalogItem::toEntity)
-                    validateCatalogEntries(entries)
-                    catalogDao.replaceAll(entries)
-                    entries
-                }
-            }.onFailure { Log.e(TAG, "Failed to refresh store catalog", it) }
+                Result.success(
+                    response.use {
+                        check(it.isSuccessful) { "Catalog request failed with HTTP ${it.code}" }
+                        val payload = json.decodeFromString<StoreCatalogResponse>(it.body.string())
+                        val entries = payload.apps.map(StoreCatalogItem::toEntity)
+                        validateCatalogEntries(entries)
+                        catalogDao.replaceAll(entries)
+                        entries
+                    }
+                )
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to refresh store catalog", exception)
+                Result.failure(exception)
+            }
         }
     }
 
@@ -68,7 +78,7 @@ class StoreCatalogRepository @Inject constructor(
         if (refreshResult.isFailure && !hasValidSnapshot()) {
             throw StoreCatalogUnavailableException(refreshResult.exceptionOrNull())
         }
-        return findByOriginalPackage(packageName)
+        return findByOriginalPackage(packageName) ?: findByCustomPackage(packageName)
     }
 
     @Serializable
@@ -96,7 +106,9 @@ class StoreCatalogRepository @Inject constructor(
         val deviceModels: List<String>
     ) {
         fun toEntity(): StoreCatalogEntry {
-            require(originalPackageId.isNotBlank() && customPackageId.isNotBlank())
+            require(PACKAGE_NAME.matches(originalPackageId))
+            require(PACKAGE_NAME.matches(customPackageId))
+            require(APK_NAME.matches(apkName) && ".." !in apkName)
             require(versionCode > 0 && sizeBytes > 0)
             require(downloadUrl.startsWith("https://") && iconUrl.startsWith("https://"))
             require(SHA256.matches(sha256))

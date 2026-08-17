@@ -94,14 +94,14 @@ data class Download(
             Date().time
         )
 
-        fun fromExternalApk(externalApk: ExternalApk): Download = Download(
+        fun fromExternalApk(externalApk: ExternalApk, isInstalled: Boolean): Download = Download(
             packageName = externalApk.packageName,
             versionCode = externalApk.versionCode,
             offerType = 0,
-            isInstalled = false,
+            isInstalled = isInstalled,
             displayName = externalApk.displayName,
             iconURL = externalApk.iconURL,
-            size = 0,
+            size = externalApk.fileList.sumOf { it.size },
             id = 0,
             status = DownloadStatus.QUEUED,
             progress = 0,
@@ -110,7 +110,8 @@ data class Download(
             totalFiles = 1,
             downloadedFiles = 0,
             fileList = externalApk.fileList,
-            sharedLibs = emptyList()
+            sharedLibs = emptyList(),
+            downloadedAt = Date().time
         )
     }
 
@@ -120,5 +121,25 @@ data class Download(
         // Require at least one actual APK on disk, not just that the directory exists —
         // an empty/partially-cleaned directory must not look installable.
         return dir.listFiles()?.any { it.name.endsWith(".apk") } == true
+    }
+
+    fun hasSameArtifactAs(other: Download): Boolean {
+        if (packageName != other.packageName || versionCode != other.versionCode) return false
+        if (other.fileList.isEmpty()) return true
+        if (fileList.size != other.fileList.size) return false
+
+        val currentFiles = fileList.sortedBy { it.name }
+        val replacementFiles = other.fileList.sortedBy { it.name }
+        return currentFiles.zip(replacementFiles).all { (file, otherFile) ->
+            file.name == otherFile.name &&
+                file.size == otherFile.size &&
+                when {
+                    otherFile.sha256.isNotBlank() ->
+                        file.sha256.equals(otherFile.sha256, ignoreCase = true)
+                    otherFile.sha1.isNotBlank() ->
+                        file.sha1.equals(otherFile.sha1, ignoreCase = true)
+                    else -> file.url == otherFile.url
+                }
+        }
     }
 }

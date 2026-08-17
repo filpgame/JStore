@@ -184,9 +184,7 @@ class UpdateWorker @AssistedInject constructor(
                 throw StoreCatalogUnavailableException(catalogRefresh.exceptionOrNull())
             }
             val catalogEntries = storeCatalogRepository.getEntries()
-            val catalogPackages = catalogEntries.flatMap {
-                listOf(it.originalPackageId, it.customPackageId)
-            }.toSet()
+            val catalogPackages = catalogEntries.mapTo(mutableSetOf()) { it.customPackageId }
             val packages = PackageUtil.getAllValidPackages(context)
                 .filterNot { blacklistProvider.isBlacklisted(it.packageName) }
                 .filter { if (!isExtendedUpdateEnabled) it.applicationInfo!!.enabled else true }

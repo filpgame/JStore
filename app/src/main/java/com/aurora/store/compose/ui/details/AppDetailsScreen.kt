@@ -140,6 +140,7 @@ fun AppDetailsScreen(
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     val effectivePackageName by viewModel.effectivePackageName.collectAsStateWithLifecycle()
     val isCatalogMapped by viewModel.isCatalogMapped.collectAsStateWithLifecycle()
+    val canReview by viewModel.canReview.collectAsStateWithLifecycle()
 
     LaunchedEffect(key1 = packageName) { viewModel.fetchAppDetails(packageName) }
 
@@ -186,6 +187,7 @@ fun AppDetailsScreen(
                     app = loadedApp,
                     effectivePackageName = effectivePackageName,
                     isCatalogMapped = isCatalogMapped,
+                    canReview = canReview,
                     featuredReviews = featuredReviews,
                     userReview = userReview,
                     suggestionsBundle = suggestionsBundle,
@@ -300,6 +302,7 @@ private fun ScreenContentApp(
     app: App,
     effectivePackageName: String = app.packageName,
     isCatalogMapped: Boolean = false,
+    canReview: Boolean = app.isInstalled,
     featuredReviews: List<Review> = emptyList(),
     userReview: Review? = null,
     suggestionsBundle: StreamBundle? = StreamBundle.EMPTY,
@@ -420,7 +423,7 @@ private fun ScreenContentApp(
     }
 
     fun onUpdateClicked() {
-        if (!warnTrackers) {
+        if (!warnTrackers || isCatalogMapped) {
             onInstall()
             return
         }
@@ -646,7 +649,7 @@ private fun ScreenContentApp(
 
                     item {
                         // Reviews can only be submitted by personal accounts for installed apps.
-                        if (!isAnonymous && app.isInstalled) {
+                        if (!isAnonymous && canReview) {
                             UserReview(
                                 review = userReview,
                                 onSubmit = onSubmitReview,

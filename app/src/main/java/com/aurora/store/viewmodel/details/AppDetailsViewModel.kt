@@ -52,6 +52,7 @@ import com.aurora.store.util.Preferences.PREFERENCE_UPDATES_EXTENDED
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -98,6 +99,7 @@ class AppDetailsViewModel @Inject constructor(
     val suggestionsBundle: StateFlow<StreamBundle?> = _suggestionsBundle.asStateFlow()
 
     private var suggestionsState: StreamBundle = StreamBundle.EMPTY
+    private var playPackageName: String = ""
 
     private val _featuredReviews = MutableStateFlow<List<Review>>(emptyList())
     val featuredReviews = _featuredReviews.asStateFlow()
@@ -145,6 +147,9 @@ class AppDetailsViewModel @Inject constructor(
 
     private val _isCatalogMapped = MutableStateFlow(false)
     val isCatalogMapped = _isCatalogMapped.asStateFlow()
+
+    private val _canReview = MutableStateFlow(false)
+    val canReview = _canReview.asStateFlow()
 
     private var catalogEntry: StoreCatalogEntry? = null
 
@@ -220,9 +225,11 @@ class AppDetailsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 catalogEntry = storeCatalogRepository.resolveForDownload(packageName)
+                playPackageName = catalogEntry?.originalPackageId ?: packageName
                 _isCatalogMapped.value = catalogEntry != null
                 _effectivePackageName.value = catalogEntry?.customPackageId ?: packageName
-                _app.value = appDetailsHelper.getAppByPackageName(packageName).copy(
+                _canReview.value = PackageUtil.isInstalled(context, playPackageName)
+                _app.value = appDetailsHelper.getAppByPackageName(playPackageName).copy(
                     isInstalled = PackageUtil.isInstalled(
                         context,
                         catalogEntry?.customPackageId ?: packageName
@@ -244,6 +251,8 @@ class AppDetailsViewModel @Inject constructor(
                     _state.value =
                         existingDownload?.let { stateFromDownload(it) } ?: defaultAppState
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: GooglePlayException.AuthException) {
                 // The saved Play token has been rejected mid-session. Hand off to
                 // Splash to re-validate and rebuild auth, and ask it to bring the
@@ -259,17 +268,17 @@ class AppDetailsViewModel @Inject constructor(
             // Only proceed if there was no error while fetching the app details
             if (throwable != null || app.value == null) return@invokeOnCompletion
 
-            fetchFavourite(packageName)
-            fetchFeaturedReviews(packageName)
+            fetchFavourite(playPackageName)
+            fetchFeaturedReviews(playPackageName)
             // Reviews can only be submitted for installed apps with a personal account, so the
             // user's existing review is only relevant (and fetchable) in that case.
-            if (!authProvider.isAnonymous && app.value!!.isInstalled) {
+            if (!authProvider.isAnonymous && _canReview.value) {
                 fetchUserAppReview(app.value!!)
             }
-            fetchDataSafetyReport(packageName)
+            fetchDataSafetyReport(playPackageName)
             fetchSuggestions()
-            fetchExodusPrivacyReport(packageName)
-            if (app.value!!.requiresGMS()) fetchPlexusReport(packageName)
+            fetchExodusPrivacyReport(playPackageName)
+            if (app.value!!.requiresGMS()) fetchPlexusReport(playPackageName)
         }
     }
 
@@ -278,6 +287,8 @@ class AppDetailsViewModel @Inject constructor(
             try {
                 _testingProgramStatus.value =
                     appDetailsHelper.testingProgram(packageName, subscribe)
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to fetch testing program status", exception)
             }
@@ -310,6 +321,8 @@ class AppDetailsViewModel @Inject constructor(
                         reviewDao.delete(app.packageName, email)
                     }
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to fetch user review", exception)
             }
@@ -363,15 +376,31 @@ class AppDetailsViewModel @Inject constructor(
 
     fun enqueueDownload(app: App) {
         viewModelScope.launch(Dispatchers.IO) {
-            catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
-                ?: downloadHelper.enqueueApp(app)
+            try {
+                catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
+                    ?: downloadHelper.enqueueApp(app)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to enqueue app download", exception)
+                _installError.value = InstallError(exception.message, null)
+            }
         }
     }
 
     fun enqueueDownloadWith(app: App, accountId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
-                ?: downloadHelper.enqueueApp(app, accountId)
+            check(catalogEntry == null) {
+                "Account-bound downloads are not supported for catalog entries"
+            }
+            try {
+                downloadHelper.enqueueApp(app, accountId)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to enqueue app download", exception)
+                _installError.value = InstallError(exception.message, null)
+            }
         }
     }
 

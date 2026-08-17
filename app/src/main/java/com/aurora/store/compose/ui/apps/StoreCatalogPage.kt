@@ -22,7 +22,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.aurora.extensions.toast
 import com.aurora.store.R
 import com.aurora.store.compose.composable.ContainedLoadingIndicator
 import com.aurora.store.compose.composable.Placeholder
@@ -50,12 +53,19 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
     val downloads by viewModel.downloads.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val hasError by viewModel.hasError.collectAsStateWithLifecycle()
+    val installationRevision by viewModel.installationRevision.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.installFailed.collect { context.toast(R.string.store_catalog_error) }
+    }
 
     StoreCatalogContent(
         entries = entries,
         downloads = downloads.associateBy { it.packageName },
         isLoading = isLoading,
         hasError = hasError,
+        installationRevision = installationRevision,
         onInstall = viewModel::install,
         onCancel = viewModel::cancel,
         onRetry = viewModel::retry,
@@ -69,6 +79,7 @@ private fun StoreCatalogContent(
     downloads: Map<String, Download>,
     isLoading: Boolean,
     hasError: Boolean,
+    installationRevision: Int,
     onInstall: (StoreCatalogEntry) -> Unit,
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
@@ -103,6 +114,7 @@ private fun StoreCatalogContent(
                     StoreCatalogItem(
                         entry = entry,
                         download = downloads[entry.customPackageId],
+                        installationRevision = installationRevision,
                         onInstall = { onInstall(entry) },
                         onCancel = { onCancel(entry.customPackageId) },
                         onRetry = { onRetry(entry.customPackageId) }
@@ -117,19 +129,27 @@ private fun StoreCatalogContent(
 private fun StoreCatalogItem(
     entry: StoreCatalogEntry,
     download: Download?,
+    installationRevision: Int,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit
 ) {
     val context = LocalContext.current
-    val isInstalled = PackageUtil.isInstalled(context, entry.customPackageId)
-    val isUpToDate = PackageUtil.isInstalled(context, entry.customPackageId, entry.versionCode)
-    val hasValidSigner = if (isInstalled) {
-        entry.signerSha256 in
-            CertUtil.getCertificateSha256Hashes(context, entry.customPackageId)
-    } else {
-        true
+    val packageState = remember(entry, installationRevision) {
+        val isInstalled = PackageUtil.isInstalled(context, entry.customPackageId)
+        CatalogPackageState(
+            isInstalled = isInstalled,
+            isUpToDate = PackageUtil.isInstalled(
+                context,
+                entry.customPackageId,
+                entry.versionCode
+            ),
+            hasValidSigner = !isInstalled ||
+                entry.signerSha256 in
+                CertUtil.getCertificateSha256Hashes(context, entry.customPackageId)
+        )
     }
+    val matchesCurrentArtifact = download?.matches(entry) == true
 
     Row(
         modifier = Modifier
@@ -171,22 +191,41 @@ private fun StoreCatalogItem(
             download?.isActive == true -> OutlinedButton(onClick = onCancel) {
                 Text(stringResource(R.string.action_cancel))
             }
-            !hasValidSigner -> OutlinedButton(onClick = {}, enabled = false) {
+            !packageState.hasValidSigner -> OutlinedButton(onClick = {}, enabled = false) {
                 Text(stringResource(R.string.store_catalog_incompatible_signature))
             }
-            download?.status == DownloadStatus.FAILED -> OutlinedButton(onClick = onRetry) {
-                Text(stringResource(R.string.action_retry))
-            }
-            isUpToDate -> OutlinedButton(onClick = {}, enabled = false) {
+            download?.status == DownloadStatus.FAILED && matchesCurrentArtifact ->
+                OutlinedButton(onClick = onRetry) {
+                    Text(stringResource(R.string.action_retry))
+                }
+            packageState.isUpToDate -> OutlinedButton(onClick = {}, enabled = false) {
                 Text(stringResource(R.string.store_catalog_installed))
             }
             else -> Button(onClick = onInstall) {
                 Text(
                     stringResource(
-                        if (isInstalled) R.string.action_update else R.string.action_install
+                        if (packageState.isInstalled) {
+                            R.string.action_update
+                        } else {
+                            R.string.action_install
+                        }
                     )
                 )
             }
         }
     }
+}
+
+private data class CatalogPackageState(
+    val isInstalled: Boolean,
+    val isUpToDate: Boolean,
+    val hasValidSigner: Boolean
+)
+
+internal fun Download.matches(entry: StoreCatalogEntry): Boolean {
+    val file = fileList.singleOrNull() ?: return false
+    return versionCode == entry.versionCode &&
+        file.name == entry.apkName &&
+        file.url == entry.downloadUrl &&
+        file.sha256.equals(entry.sha256, ignoreCase = true)
 }
