@@ -28,6 +28,7 @@ import com.aurora.gplayapi.network.IHttpClient
 import com.aurora.store.AuroraApp
 import com.aurora.store.data.AccountRepository
 import com.aurora.store.data.ExodusRepository
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.AuthEvent
 import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.helper.DownloadHelper
@@ -37,6 +38,7 @@ import com.aurora.store.data.model.PlexusReport
 import com.aurora.store.data.model.Report
 import com.aurora.store.data.model.Scores
 import com.aurora.store.data.providers.AuthProvider
+import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.data.room.favourite.Favourite
 import com.aurora.store.data.room.favourite.FavouriteDao
@@ -50,6 +52,7 @@ import com.aurora.store.util.Preferences.PREFERENCE_UPDATES_EXTENDED
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -82,7 +85,8 @@ class AppDetailsViewModel @Inject constructor(
     private val httpClient: IHttpClient,
     private val json: Json,
     private val accountRepository: AccountRepository,
-    private val exodusRepository: ExodusRepository
+    private val exodusRepository: ExodusRepository,
+    private val storeCatalogRepository: StoreCatalogRepository
 ) : ViewModel() {
 
     private val _app = MutableStateFlow<App?>(null)
@@ -95,6 +99,7 @@ class AppDetailsViewModel @Inject constructor(
     val suggestionsBundle: StateFlow<StreamBundle?> = _suggestionsBundle.asStateFlow()
 
     private var suggestionsState: StreamBundle = StreamBundle.EMPTY
+    private var playPackageName: String = ""
 
     private val _featuredReviews = MutableStateFlow<List<Review>>(emptyList())
     val featuredReviews = _featuredReviews.asStateFlow()
@@ -137,11 +142,22 @@ class AppDetailsViewModel @Inject constructor(
     private val _installError = MutableStateFlow<InstallError?>(null)
     val installError = _installError.asStateFlow()
 
+    private val _effectivePackageName = MutableStateFlow("")
+    val effectivePackageName = _effectivePackageName.asStateFlow()
+
+    private val _isCatalogMapped = MutableStateFlow(false)
+    val isCatalogMapped = _isCatalogMapped.asStateFlow()
+
+    private val _canReview = MutableStateFlow(false)
+    val canReview = _canReview.asStateFlow()
+
+    private var catalogEntry: StoreCatalogEntry? = null
+
     data class InstallError(val error: String?, val extra: String?)
 
     private val download = combine(app, downloadHelper.downloadsList) { a, list ->
         if (a?.packageName.isNullOrBlank()) return@combine null
-        list.find { d -> d.packageName == a.packageName }
+        list.find { d -> d.packageName == resolvedPackageName }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // E-mail of the signed-in account; blank for anonymous sessions. Used to scope cached reviews.
@@ -149,23 +165,36 @@ class AppDetailsViewModel @Inject constructor(
         get() = authProvider.authData?.email.orEmpty()
 
     private val isInstalled: Boolean
-        get() = PackageUtil.isInstalled(context, app.value!!.packageName)
+        get() = PackageUtil.isInstalled(context, resolvedPackageName)
 
     private val isUpdatable: Boolean
-        get() = PackageUtil.isUpdatable(context, app.value!!.packageName, app.value!!.versionCode)
+        get() = PackageUtil.isUpdatable(context, resolvedPackageName, resolvedVersionCode)
 
     private val isArchived: Boolean
-        get() = PackageUtil.isArchived(context, app.value!!.packageName)
+        get() = PackageUtil.isArchived(context, resolvedPackageName)
+
+    private val resolvedPackageName: String
+        get() = effectivePackageName.value.ifBlank { app.value?.packageName.orEmpty() }
+
+    private val resolvedVersionCode: Long
+        get() = catalogEntry?.versionCode ?: app.value?.versionCode ?: 0L
 
     private val isExtendedUpdateEnabled: Boolean
         get() = Preferences.getBoolean(context, PREFERENCE_UPDATES_EXTENDED)
 
     private val hasValidCerts: Boolean
-        get() = app.value!!.certificateSetList.any {
-            it.certificateSet in CertUtil.getEncodedCertificateHashes(
+        get() = if (catalogEntry != null) {
+            catalogEntry!!.signerSha256 in CertUtil.getCertificateSha256Hashes(
                 context,
-                app.value!!.packageName
+                resolvedPackageName
             )
+        } else {
+            app.value!!.certificateSetList.any {
+                it.certificateSet in CertUtil.getEncodedCertificateHashes(
+                    context,
+                    resolvedPackageName
+                )
+            }
         }
 
     private val hasValidUpdate: Boolean
@@ -177,7 +206,7 @@ class AppDetailsViewModel @Inject constructor(
                 if (hasValidUpdate) {
                     AppState.Updatable
                 } else {
-                    val info = PackageUtil.getPackageInfo(context, app.value!!.packageName)
+                    val info = PackageUtil.getPackageInfo(context, resolvedPackageName)
                     AppState.Installed(
                         versionName = info.versionName ?: String(),
                         versionCode = PackageInfoCompat.getLongVersionCode(info)
@@ -195,17 +224,25 @@ class AppDetailsViewModel @Inject constructor(
     fun fetchAppDetails(packageName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _app.value = appDetailsHelper.getAppByPackageName(packageName).copy(
-                    isInstalled = PackageUtil.isInstalled(context, packageName)
+                catalogEntry = storeCatalogRepository.resolveForDownload(packageName)
+                playPackageName = catalogEntry?.originalPackageId ?: packageName
+                _isCatalogMapped.value = catalogEntry != null
+                _effectivePackageName.value = catalogEntry?.customPackageId ?: packageName
+                _canReview.value = PackageUtil.isInstalled(context, playPackageName)
+                _app.value = appDetailsHelper.getAppByPackageName(playPackageName).copy(
+                    isInstalled = PackageUtil.isInstalled(
+                        context,
+                        catalogEntry?.customPackageId ?: packageName
+                    )
                 )
-                val existingDownload = downloadHelper.getDownload(packageName)
+                val existingDownload = downloadHelper.getDownload(resolvedPackageName)
 
                 // A COMPLETED record for an app that is no longer installed means the app was
                 // installed then removed while Aurora held a stale record.
                 // Remove it so the live download observer doesn't lock the UI in Installing state
                 // indefinitely.
                 if (existingDownload?.status == DownloadStatus.COMPLETED && !isInstalled) {
-                    downloadHelper.removeDownload(packageName)
+                    downloadHelper.removeDownload(resolvedPackageName)
                     _state.value = defaultAppState
                 } else {
                     // Seed state from any in-flight download for this package so reopening
@@ -214,6 +251,8 @@ class AppDetailsViewModel @Inject constructor(
                     _state.value =
                         existingDownload?.let { stateFromDownload(it) } ?: defaultAppState
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: GooglePlayException.AuthException) {
                 // The saved Play token has been rejected mid-session. Hand off to
                 // Splash to re-validate and rebuild auth, and ask it to bring the
@@ -229,17 +268,17 @@ class AppDetailsViewModel @Inject constructor(
             // Only proceed if there was no error while fetching the app details
             if (throwable != null || app.value == null) return@invokeOnCompletion
 
-            fetchFavourite(packageName)
-            fetchFeaturedReviews(packageName)
+            fetchFavourite(playPackageName)
+            fetchFeaturedReviews(playPackageName)
             // Reviews can only be submitted for installed apps with a personal account, so the
             // user's existing review is only relevant (and fetchable) in that case.
-            if (!authProvider.isAnonymous && app.value!!.isInstalled) {
+            if (!authProvider.isAnonymous && _canReview.value) {
                 fetchUserAppReview(app.value!!)
             }
-            fetchDataSafetyReport(packageName)
+            fetchDataSafetyReport(playPackageName)
             fetchSuggestions()
-            fetchExodusPrivacyReport(packageName)
-            if (app.value!!.requiresGMS()) fetchPlexusReport(packageName)
+            fetchExodusPrivacyReport(playPackageName)
+            if (app.value!!.requiresGMS()) fetchPlexusReport(playPackageName)
         }
     }
 
@@ -248,6 +287,8 @@ class AppDetailsViewModel @Inject constructor(
             try {
                 _testingProgramStatus.value =
                     appDetailsHelper.testingProgram(packageName, subscribe)
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to fetch testing program status", exception)
             }
@@ -280,6 +321,8 @@ class AppDetailsViewModel @Inject constructor(
                         reviewDao.delete(app.packageName, email)
                     }
                 }
+            } catch (exception: CancellationException) {
+                throw exception
             } catch (exception: Exception) {
                 Log.e(TAG, "Failed to fetch user review", exception)
             }
@@ -333,16 +376,36 @@ class AppDetailsViewModel @Inject constructor(
 
     fun enqueueDownload(app: App) {
         viewModelScope.launch(Dispatchers.IO) {
-            downloadHelper.enqueueApp(app)
+            try {
+                catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
+                    ?: downloadHelper.enqueueApp(app)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to enqueue app download", exception)
+                _installError.value = InstallError(exception.message, null)
+            }
         }
     }
 
     fun enqueueDownloadWith(app: App, accountId: String) {
-        viewModelScope.launch(Dispatchers.IO) { downloadHelper.enqueueApp(app, accountId) }
+        viewModelScope.launch(Dispatchers.IO) {
+            check(catalogEntry == null) {
+                "Account-bound downloads are not supported for catalog entries"
+            }
+            try {
+                downloadHelper.enqueueApp(app, accountId)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to enqueue app download", exception)
+                _installError.value = InstallError(exception.message, null)
+            }
+        }
     }
 
     fun cancelDownload(app: App) {
-        viewModelScope.launch { downloadHelper.cancelDownload(app.packageName) }
+        viewModelScope.launch { downloadHelper.cancelDownload(resolvedPackageName) }
     }
 
     fun toggleFavourite(app: App) {
@@ -371,7 +434,7 @@ class AppDetailsViewModel @Inject constructor(
 
     private fun observeAppState() {
         AuroraApp.events.installerEvent
-            .filter { it.packageName == app.value?.packageName }
+            .filter { it.packageName == resolvedPackageName }
             .onEach { event ->
                 if (event is InstallerEvent.Failed) {
                     _installError.value = InstallError(event.error, event.extra)

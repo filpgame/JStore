@@ -138,6 +138,9 @@ fun AppDetailsScreen(
     val installError by viewModel.installError.collectAsStateWithLifecycle()
     val suggestionsBundle by viewModel.suggestionsBundle.collectAsStateWithLifecycle()
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
+    val effectivePackageName by viewModel.effectivePackageName.collectAsStateWithLifecycle()
+    val isCatalogMapped by viewModel.isCatalogMapped.collectAsStateWithLifecycle()
+    val canReview by viewModel.canReview.collectAsStateWithLifecycle()
 
     LaunchedEffect(key1 = packageName) { viewModel.fetchAppDetails(packageName) }
 
@@ -182,6 +185,9 @@ fun AppDetailsScreen(
                 val loadedApp = app!!
                 ScreenContentApp(
                     app = loadedApp,
+                    effectivePackageName = effectivePackageName,
+                    isCatalogMapped = isCatalogMapped,
+                    canReview = canReview,
                     featuredReviews = featuredReviews,
                     userReview = userReview,
                     suggestionsBundle = suggestionsBundle,
@@ -200,11 +206,11 @@ fun AppDetailsScreen(
                     },
                     onFavorite = { viewModel.toggleFavourite(loadedApp) },
                     onCancelDownload = { viewModel.cancelDownload(loadedApp) },
-                    onUninstall = { AppInstaller.uninstall(context, packageName) },
+                    onUninstall = { AppInstaller.uninstall(context, effectivePackageName) },
                     onOpen = {
                         try {
                             context.startActivity(
-                                PackageUtil.getLaunchIntent(context, packageName)
+                                PackageUtil.getLaunchIntent(context, effectivePackageName)
                             )
                         } catch (_: ActivityNotFoundException) {
                             context.toast(R.string.unable_to_open)
@@ -294,6 +300,9 @@ private fun ScreenContentError(message: String? = null, onRetry: (() -> Unit)? =
 @Composable
 private fun ScreenContentApp(
     app: App,
+    effectivePackageName: String = app.packageName,
+    isCatalogMapped: Boolean = false,
+    canReview: Boolean = app.isInstalled,
     featuredReviews: List<Review> = emptyList(),
     userReview: Review? = null,
     suggestionsBundle: StreamBundle? = StreamBundle.EMPTY,
@@ -414,14 +423,14 @@ private fun ScreenContentApp(
     }
 
     fun onUpdateClicked() {
-        if (!warnTrackers) {
+        if (!warnTrackers || isCatalogMapped) {
             onInstall()
             return
         }
         isChecking = true
         checkJob = coroutineScope.launch {
             val installedVc =
-                PackageUtil.getInstalledVersionCode(context, app.packageName)
+                PackageUtil.getInstalledVersionCode(context, effectivePackageName)
             val trackers = onCheckNewTrackers(app.packageName, installedVc)
             if (trackers.isEmpty()) {
                 onInstall()
@@ -461,8 +470,8 @@ private fun ScreenContentApp(
         AppDetailsMenu(
             isFavorite = isFavorite,
             state = state,
-            canManualDownload = canAcquire,
-            canUseOtherAccount = accounts.size > 1
+            canManualDownload = canAcquire && !isCatalogMapped,
+            canUseOtherAccount = accounts.size > 1 && !isCatalogMapped
         ) { menuItem ->
             when (menuItem) {
                 MenuItem.FAVORITE -> onFavorite()
@@ -477,10 +486,10 @@ private fun ScreenContentApp(
 
                 MenuItem.SHARE -> context.share(app.displayName, app.packageName)
 
-                MenuItem.APP_INFO -> context.appInfo(app.packageName)
+                MenuItem.APP_INFO -> context.appInfo(effectivePackageName)
 
                 MenuItem.ADD_TO_HOME -> {
-                    ShortcutManagerUtil.requestPinShortcut(context, app.packageName)
+                    ShortcutManagerUtil.requestPinShortcut(context, effectivePackageName)
                 }
 
                 MenuItem.PLAY_STORE -> openPlayStore(context, app.packageName)
@@ -537,8 +546,8 @@ private fun ScreenContentApp(
                 }
 
                 is AppState.Installed -> {
-                    val canOpen = remember(app.packageName) {
-                        PackageUtil.getLaunchIntent(context, app.packageName) != null
+                    val canOpen = remember(effectivePackageName) {
+                        PackageUtil.getLaunchIntent(context, effectivePackageName) != null
                     }
                     Actions(
                         primaryActionDisplayName = stringResource(R.string.action_open),
@@ -562,7 +571,7 @@ private fun ScreenContentApp(
                             R.string.title_manual_download
                         ),
                         isPrimaryActionEnabled = canAcquire,
-                        isSecondaryActionEnabled = canAcquire,
+                        isSecondaryActionEnabled = canAcquire && !isCatalogMapped,
                         onPrimaryAction = ::onInstall,
                         onSecondaryAction = { showExtraPane(ExtraScreen.ManualDownload) }
                     )
@@ -597,6 +606,7 @@ private fun ScreenContentApp(
                     item {
                         Details(
                             app = app,
+                            effectivePackageName = effectivePackageName,
                             state = state,
                             onNavigateToDetailsDevProfile = { showExtraPane(Screen.DevProfile(it)) }
                         )
@@ -639,7 +649,7 @@ private fun ScreenContentApp(
 
                     item {
                         // Reviews can only be submitted by personal accounts for installed apps.
-                        if (!isAnonymous && app.isInstalled) {
+                        if (!isAnonymous && canReview) {
                             UserReview(
                                 review = userReview,
                                 onSubmit = onSubmitReview,

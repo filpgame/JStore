@@ -22,6 +22,7 @@ package com.aurora.store.viewmodel.all
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aurora.store.data.ExodusRepository
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.helper.UpdateHelper
 import com.aurora.store.data.model.ExodusTracker
@@ -34,7 +35,8 @@ import kotlinx.coroutines.launch
 class UpdatesViewModel @Inject constructor(
     val updateHelper: UpdateHelper,
     private val downloadHelper: DownloadHelper,
-    private val exodusRepository: ExodusRepository
+    private val exodusRepository: ExodusRepository,
+    private val storeCatalogRepository: StoreCatalogRepository
 ) : ViewModel() {
 
     var updateAllEnqueued: Boolean = false
@@ -61,6 +63,9 @@ class UpdatesViewModel @Inject constructor(
         packageName: String,
         installedVersionCode: Long
     ): List<ExodusTracker> = exodusRepository.getNewTrackers(packageName, installedVersionCode)
+
+    suspend fun isCatalogPackage(packageName: String): Boolean =
+        storeCatalogRepository.findByCustomPackage(packageName) != null
 
     fun downloadAll(updates: List<Update>) {
         viewModelScope.launch {

@@ -54,6 +54,7 @@ import com.aurora.store.util.PackageUtil
 @Composable
 fun Details(
     app: App,
+    effectivePackageName: String = app.packageName,
     state: AppState = AppState.Unavailable,
     onNavigateToDetailsDevProfile: (developerName: String) -> Unit = {}
 ) {
@@ -68,8 +69,8 @@ fun Details(
         val updateVersion = stringResource(R.string.version, versionName, versionCode)
         val localVersion = stringResource(
             R.string.version,
-            PackageUtil.getInstalledVersionName(context, app.packageName),
-            PackageUtil.getInstalledVersionCode(context, app.packageName)
+            PackageUtil.getInstalledVersionName(context, effectivePackageName),
+            PackageUtil.getInstalledVersionCode(context, effectivePackageName)
         )
 
         Text(

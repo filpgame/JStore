@@ -252,6 +252,10 @@ fun MainScreen(
                                     performUpdate(update)
                                 } else {
                                     val job = coroutineScope.launch {
+                                        if (updatesViewModel.isCatalogPackage(update.packageName)) {
+                                            performUpdate(update)
+                                            return@launch
+                                        }
                                         val installedVc = PackageUtil.getInstalledVersionCode(
                                             context,
                                             update.packageName

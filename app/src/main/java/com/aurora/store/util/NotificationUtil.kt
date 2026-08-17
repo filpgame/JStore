@@ -536,6 +536,17 @@ object NotificationUtil {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
+    fun getUnarchiveFailureNotification(context: Context, packageName: String): Notification =
+        NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_ALERTS)
+            .setSmallIcon(R.drawable.ic_apps_outage)
+            .setContentTitle(context.getString(R.string.action_unarchive))
+            .setContentText(context.getString(R.string.store_catalog_error))
+            .setAutoCancel(true)
+            .setContentIntent(getContentIntentForDetails(context, packageName))
+            .setCategory(NotificationCompat.CATEGORY_ERROR)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
     fun getExportStatusNotification(
         context: Context,
         displayName: String,

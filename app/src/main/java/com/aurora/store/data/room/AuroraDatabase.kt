@@ -8,6 +8,9 @@ import com.aurora.store.data.room.account.AccountConverter
 import com.aurora.store.data.room.account.AccountDao
 import com.aurora.store.data.room.account.AppAccountBinding
 import com.aurora.store.data.room.account.AppAccountBindingDao
+import com.aurora.store.data.room.catalog.StoreCatalogDao
+import com.aurora.store.data.room.catalog.StoreCatalogEntry
+import com.aurora.store.data.room.catalog.StoreCatalogState
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.data.room.download.DownloadConverter
 import com.aurora.store.data.room.download.DownloadDao
@@ -31,9 +34,11 @@ import com.aurora.store.data.room.update.UpdateDao
         LocalReview::class,
         Account::class,
         AppAccountBinding::class,
-        TrackerEntity::class
+        TrackerEntity::class,
+        StoreCatalogEntry::class,
+        StoreCatalogState::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @TypeConverters(DownloadConverter::class, AccountConverter::class)
@@ -46,4 +51,5 @@ abstract class AuroraDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun appAccountBindingDao(): AppAccountBindingDao
     abstract fun trackerDao(): TrackerDao
+    abstract fun storeCatalogDao(): StoreCatalogDao
 }

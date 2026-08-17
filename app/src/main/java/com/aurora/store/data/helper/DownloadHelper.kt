@@ -15,9 +15,11 @@ import com.aurora.extensions.TAG
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.AuroraApp
 import com.aurora.store.data.AccountRepository
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.model.DownloadStatus
+import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.data.room.download.DownloadDao
 import com.aurora.store.data.room.suite.ExternalApk
@@ -42,7 +44,8 @@ class DownloadHelper @Inject constructor(
     @ApplicationContext private val context: Context,
     private val downloadDao: DownloadDao,
     private val appInstaller: AppInstaller,
-    private val accountRepository: AccountRepository
+    private val accountRepository: AccountRepository,
+    private val storeCatalogRepository: StoreCatalogRepository
 ) {
 
     companion object {
@@ -157,7 +160,17 @@ class DownloadHelper @Inject constructor(
      * @param app [App] to download
      */
     suspend fun enqueueApp(app: App) {
-        enqueue(Download.fromApp(app))
+        val catalogEntry = storeCatalogRepository.resolveForDownload(app.packageName)
+        if (catalogEntry != null) {
+            enqueueStoreCatalog(catalogEntry)
+        } else {
+            enqueue(Download.fromApp(app))
+        }
+    }
+
+    suspend fun enqueueStoreCatalog(entry: StoreCatalogEntry) {
+        val externalApk = entry.toExternalApk()
+        enqueue(Download.fromExternalApk(externalApk, externalApk.isInstalled(context)))
     }
 
     /**
@@ -191,12 +204,12 @@ class DownloadHelper @Inject constructor(
      * @param externalApk [ExternalApk] to download
      */
     suspend fun enqueueStandalone(externalApk: ExternalApk) {
-        enqueue(Download.fromExternalApk(externalApk))
+        enqueue(Download.fromExternalApk(externalApk, externalApk.isInstalled(context)))
     }
 
     /**
      * Inserts a new download row, but only when a (re)download is actually needed. For an
-     * existing record of the same version this:
+     * existing record of the same version and artifact identity this:
      * - **installs without re-downloading** if the files are already downloaded & verified
      *   (e.g. the user missed the system install prompt, or the periodic update check runs
      *   again before a pending install completed); or
@@ -204,12 +217,17 @@ class DownloadHelper @Inject constructor(
      *   verifying), so the periodic [UpdateWorker] and repeated user taps can't reset it back
      *   to [DownloadStatus.QUEUED] and re-download it.
      *
-     * A genuinely newer version, or a previously failed/cancelled download whose files are
-     * gone, falls through and is (re)enqueued.
+     * A genuinely different artifact, or a previously failed/cancelled download whose files
+     * are gone, falls through and is (re)enqueued.
      */
     private suspend fun enqueue(download: Download) {
         val existing = getDownload(download.packageName)
-        if (existing != null && existing.versionCode == download.versionCode) {
+        if (existing != null && !existing.hasSameArtifactAs(download) && existing.isActive) {
+            Log.i(TAG, "Cancelling stale active artifact for ${download.packageName}")
+            cancelDownload(download.packageName)
+            return
+        }
+        if (existing != null && existing.hasSameArtifactAs(download)) {
             if (existing.canInstall(context)) {
                 Log.i(TAG, "${download.packageName} already downloaded, installing directly")
                 runCatching {

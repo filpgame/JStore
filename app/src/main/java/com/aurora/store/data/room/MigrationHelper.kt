@@ -54,6 +54,10 @@ object MigrationHelper {
         override fun migrate(db: SupportSQLiteDatabase) = migrateFrom11To12(db)
     }
 
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) = migrateFrom12To13(db)
+    }
+
     private const val TAG = "MigrationHelper"
 
     private fun migrateFrom1To2(database: SupportSQLiteDatabase) {
@@ -296,5 +300,32 @@ object MigrationHelper {
         } finally {
             database.endTransaction()
         }
+    }
+
+    private fun migrateFrom12To13(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS `store_catalog` (" +
+                "`originalPackageId` TEXT NOT NULL, " +
+                "`customPackageId` TEXT NOT NULL, " +
+                "`title` TEXT NOT NULL, " +
+                "`summary` TEXT NOT NULL, " +
+                "`developerName` TEXT NOT NULL, " +
+                "`iconUrl` TEXT NOT NULL, " +
+                "`versionCode` INTEGER NOT NULL, " +
+                "`versionName` TEXT NOT NULL, " +
+                "`apkName` TEXT NOT NULL, " +
+                "`downloadUrl` TEXT NOT NULL, " +
+                "`sizeBytes` INTEGER NOT NULL, " +
+                "`sha256` TEXT NOT NULL, " +
+                "`signerSha256` TEXT NOT NULL, " +
+                "`changelog` TEXT NOT NULL, " +
+                "PRIMARY KEY(`originalPackageId`))"
+        )
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS `store_catalog_state` (" +
+                "`id` INTEGER NOT NULL, " +
+                "`isValid` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+        )
     }
 }

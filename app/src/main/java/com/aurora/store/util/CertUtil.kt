@@ -81,6 +81,18 @@ object CertUtil {
         emptyList()
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
+    fun getCertificateSha256Hashes(context: Context, packageName: String): List<String> = try {
+        getX509Certificates(context, packageName).map { certificate ->
+            MessageDigest.getInstance(Algorithm.SHA256.value)
+                .digest(certificate.encoded)
+                .toHexString()
+        }
+    } catch (exception: Exception) {
+        Log.e(TAG, "Failed to get certificate SHA-256", exception)
+        emptyList()
+    }
+
     private fun isSignedByFDroid(context: Context, packageName: String): Boolean = try {
         getX509Certificates(context, packageName).any { cert ->
             cert.subjectDN.name
