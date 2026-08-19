@@ -84,8 +84,22 @@ class JaecooArtifactSelectionTest {
         val selected = selectBaseArtifactNames(
             files = listOf(a, b),
             playFiles = listOf(
-                PlayFile(name = "a.apk", url = "u", size = 1L, type = PlayFile.Type.SPLIT, sha1 = "", sha256 = ""),
-                PlayFile(name = "b.apk", url = "u", size = 1L, type = PlayFile.Type.SPLIT, sha1 = "", sha256 = "")
+                PlayFile(
+                    name = "a.apk",
+                    url = "u",
+                    size = 1L,
+                    type = PlayFile.Type.SPLIT,
+                    sha1 = "",
+                    sha256 = ""
+                ),
+                PlayFile(
+                    name = "b.apk",
+                    url = "u",
+                    size = 1L,
+                    type = PlayFile.Type.SPLIT,
+                    sha1 = "",
+                    sha256 = ""
+                )
             )
         )
 
