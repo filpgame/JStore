@@ -29,6 +29,42 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/**
+ * Terminal outcome of an install attempt surfaced once to the UI as a one-shot event.
+ */
+sealed class InstallResult {
+    abstract val packageName: String
+    abstract val displayName: String
+
+    data class Success(
+        override val packageName: String,
+        override val displayName: String
+    ) : InstallResult()
+
+    data class Failure(
+        override val packageName: String,
+        override val displayName: String,
+        val reason: String?
+    ) : InstallResult()
+
+    companion object {
+        /**
+         * Maps a terminal [InstallerEvent] into the user-facing [InstallResult]. Other
+         * [InstallerEvent] subtypes (e.g. [InstallerEvent.Installing]) are not terminal
+         * and must not be mapped here.
+         */
+        fun fromEvent(event: InstallerEvent, displayName: String): InstallResult = when (event) {
+            is InstallerEvent.Installed -> Success(event.packageName, displayName)
+            is InstallerEvent.Failed -> Failure(
+                packageName = event.packageName,
+                displayName = displayName,
+                reason = event.error ?: event.extra
+            )
+            else -> throw IllegalArgumentException("Cannot map non-terminal event: $event")
+        }
+    }
+}
+
 @HiltViewModel
 class StoreCatalogViewModel @Inject constructor(
     private val repository: StoreCatalogRepository,
@@ -53,6 +89,9 @@ class StoreCatalogViewModel @Inject constructor(
     private val _installFailed = MutableSharedFlow<Unit>()
     val installFailed = _installFailed.asSharedFlow()
 
+    private val _installResult = MutableSharedFlow<InstallResult>(extraBufferCapacity = 1)
+    val installResult = _installResult.asSharedFlow()
+
     private val refreshGate = AtomicBoolean(false)
 
     init {
@@ -61,7 +100,17 @@ class StoreCatalogViewModel @Inject constructor(
             .filter { it is InstallerEvent.Installed || it is InstallerEvent.Uninstalled }
             .onEach { _installationRevision.value++ }
             .launchIn(viewModelScope)
+        AuroraApp.events.installerEvent
+            .filter { it is InstallerEvent.Installed || it is InstallerEvent.Failed }
+            .onEach { event ->
+                val displayName = displayNameFor(event.packageName)
+                _installResult.emit(InstallResult.fromEvent(event, displayName))
+            }
+            .launchIn(viewModelScope)
     }
+
+    private fun displayNameFor(packageName: String): String =
+        downloads.value.firstOrNull { it.packageName == packageName }?.displayName ?: packageName
 
     fun refresh() {
         if (!refreshGate.compareAndSet(false, true)) return
