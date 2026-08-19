@@ -504,10 +504,7 @@ private class JaecooInstallLedger(context: Context) {
  * as base. The bridge then fails fast with BASE_APK_DUPLICATE; the producer does
  * not try to disambiguate silently.
  */
-internal fun selectBaseArtifactNames(
-    files: List<File>,
-    playFiles: List<PlayFile>
-): Set<String> {
+internal fun selectBaseArtifactNames(files: List<File>, playFiles: List<PlayFile>): Set<String> {
     val onDiskNames = files.mapTo(HashSet()) { it.name }
     val declaredBase = playFiles.asSequence()
         .filter { it.type == PlayFile.Type.BASE }
