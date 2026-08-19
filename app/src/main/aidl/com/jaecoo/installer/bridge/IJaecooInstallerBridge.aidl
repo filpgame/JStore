@@ -13,4 +13,5 @@ interface IJaecooInstallerBridge {
     OperationStatus getStatus(String operationId);
     void observe(String operationId, IJaecooInstallerCallback callback);
     void cancel(String operationId);
+    String getEntitlement();
 }

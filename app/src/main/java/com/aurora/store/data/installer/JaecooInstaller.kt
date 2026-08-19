@@ -218,6 +218,15 @@ class JaecooInstaller @Inject constructor(
         }
     }
 
+    /**
+     * Acquire the active Jaecoo installer bridge, binding the Jconfig service if necessary.
+     *
+     * Returns `null` when Jconfig is not installed, not bindable, or the bind handshake
+     * exceeds the timeout. Used by privileged client surfaces (e.g. [JaecooPlanGate]) that
+     * need a one-shot query without claiming ownership of the connection.
+     */
+    internal fun currentBridge(): IJaecooInstallerBridge? = connect()
+
     private fun connect(): IJaecooInstallerBridge? {
         bridge?.let { return it }
         val latch = CountDownLatch(1)
@@ -382,6 +391,13 @@ class JaecooInstaller @Inject constructor(
         const val BRIDGE_ACTION = "com.jaecoo.installer.bridge.BIND"
         const val BRIDGE_PACKAGE = "com.frodrigues.jconfig"
         const val MIN_SERVICE_VERSION = 1
+
+        /**
+         * Minimum bridge version that exposes `getEntitlement()`. Older Jconfigs return
+         * [JaecooPlanResult.JCONFIG_OUTDATED] instead of silently failing with a "service
+         * unavailable" dialog.
+         */
+        const val MIN_SERVICE_VERSION_FOR_ENTITLEMENT = 2
         const val MIN_ANDROID_SDK = 29
         const val STATE_SUCCESS = 3
         const val STATE_FAILURE = 4
