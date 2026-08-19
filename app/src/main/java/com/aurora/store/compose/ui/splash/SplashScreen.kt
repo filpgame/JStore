@@ -88,6 +88,16 @@ fun SplashScreen(
     val canMicroGLogin = PackageUtil.hasSupportedMicroGVariant(context) &&
         Preferences.getBoolean(context, Preferences.PREFERENCE_MICROG_AUTH, true)
 
+    // Jaecoo builds ship a head-unit-aware default profile that must be in place before any auth
+    // attempt: AuthProvider.isSavedAuthDataValid rejects stale AuthData, so provisioning here
+    // guarantees the profile used at check-in matches the one we just wrote.
+    LaunchedEffect(Unit) {
+        if (BuildConfig.FLAVOR == "jaecoo") {
+            val provisioned = runCatching { viewModel.provisionJaecooDefault() }.getOrDefault(false)
+            if (provisioned) viewModel.invalidateAuthForProfileChange()
+        }
+    }
+
     var anonymousLoading by remember { mutableStateOf(false) }
     var googleLoading by remember { mutableStateOf(false) }
 
