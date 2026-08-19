@@ -1,5 +1,6 @@
 package com.aurora.store.data.providers
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -53,5 +54,38 @@ class SpoofProviderTest {
         spoofProvider.setSpoofDeviceProperties(properties)
         assertThat(spoofProvider.isDeviceSpoofEnabled).isTrue()
         assertThat(spoofProvider.deviceProperties == properties).isTrue()
+    }
+
+    @Test
+    fun testJaecooBaseProfileSelectsByApi() {
+        val base = spoofProvider.selectJaecooBaseProfile() ?: return
+        val expected = when {
+            Build.VERSION.SDK_INT >= 35 -> "Google Pixel 9a"
+            Build.VERSION.SDK_INT >= 34 -> "Nothing Phone(1)"
+            Build.VERSION.SDK_INT >= 33 -> "Google Pixel Tablet"
+            Build.VERSION.SDK_INT >= 29 -> "Nokia 1.3"
+            else -> "sirius"
+        }
+        assertThat(base.getProperty("UserReadableName")).isEqualTo(expected)
+    }
+
+    @Test
+    fun testJaecooProvisioningProducesMergedProfile() {
+        spoofProvider.removeSpoofDeviceProperties()
+        val first = spoofProvider.provisionJaecooDefault()
+        val second = spoofProvider.provisionJaecooDefault()
+
+        assertThat(spoofProvider.isDeviceSpoofEnabled).isTrue()
+        assertThat(spoofProvider.deviceProperties.getProperty("UserReadableName"))
+            .isEqualTo(SpoofProvider.JAECOO_PROFILE_NAME)
+        // Exactly one of the two calls performed work: provisioning is idempotent on signature match.
+        assertThat(first xor second).isTrue()
+    }
+
+    @Test
+    fun testJaecooProfileSignatureIsStable() {
+        val a = spoofProvider.jaecooProfileSignature()
+        val b = spoofProvider.jaecooProfileSignature()
+        assertThat(a).isEqualTo(b)
     }
 }
