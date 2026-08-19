@@ -2,6 +2,7 @@ package com.aurora.store.data.providers
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.aurora.store.util.Preferences
 import com.google.common.truth.Truth.assertThat
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -33,6 +34,8 @@ class SpoofProviderTest {
     fun tearDown() {
         spoofProvider.removeSpoofLocale()
         spoofProvider.removeSpoofDeviceProperties()
+        // Drop the provisioning signature so each test starts from a clean Jaecoo slate.
+        Preferences.remove(spoofProvider.context, Preferences.PREFERENCE_JAECOO_PROFILE_SIGNATURE)
     }
 
     @Test
@@ -58,7 +61,8 @@ class SpoofProviderTest {
 
     @Test
     fun testJaecooBaseProfileSelectsByApi() {
-        val base = spoofProvider.selectJaecooBaseProfile() ?: return
+        val base = spoofProvider.selectJaecooBaseProfile()
+        assertThat(base).isNotNull()
         val expected = when {
             Build.VERSION.SDK_INT >= 35 -> "Google Pixel 9a"
             Build.VERSION.SDK_INT >= 34 -> "Nothing Phone(1)"
@@ -66,12 +70,13 @@ class SpoofProviderTest {
             Build.VERSION.SDK_INT >= 29 -> "Nokia 1.3"
             else -> "sirius"
         }
-        assertThat(base.getProperty("UserReadableName")).isEqualTo(expected)
+        assertThat(base?.getProperty("UserReadableName")).isEqualTo(expected)
     }
 
     @Test
     fun testJaecooProvisioningProducesMergedProfile() {
         spoofProvider.removeSpoofDeviceProperties()
+        Preferences.remove(spoofProvider.context, Preferences.PREFERENCE_JAECOO_PROFILE_SIGNATURE)
         val first = spoofProvider.provisionJaecooDefault()
         val second = spoofProvider.provisionJaecooDefault()
 

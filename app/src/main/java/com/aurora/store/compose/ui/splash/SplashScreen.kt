@@ -88,9 +88,11 @@ fun SplashScreen(
     val canMicroGLogin = PackageUtil.hasSupportedMicroGVariant(context) &&
         Preferences.getBoolean(context, Preferences.PREFERENCE_MICROG_AUTH, true)
 
-    // Jaecoo builds ship a head-unit-aware default profile that must be in place before any auth
-    // attempt: AuthProvider.isSavedAuthDataValid rejects stale AuthData, so provisioning here
-    // guarantees the profile used at check-in matches the one we just wrote.
+    // Jaecoo builds ship a head-unit-aware default profile. We provision it here, before the
+    // auth flow runs, so the profile persisted at splash matches the one AuthHelper.build will
+    // send at check-in. When provisioning rewrites the profile we invalidate the cached AuthData
+    // — isSavedAuthDataValid() would otherwise return false for it and the user would be sent
+    // back to the login screen anyway, but doing it eagerly avoids a brief Main→Login flicker.
     LaunchedEffect(Unit) {
         if (BuildConfig.FLAVOR == "jaecoo") {
             val provisioned = runCatching { viewModel.provisionJaecooDefault() }.getOrDefault(false)
