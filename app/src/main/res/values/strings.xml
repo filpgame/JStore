@@ -129,6 +129,14 @@
     <string name="store_catalog_error">Could not load the device app catalogue</string>
     <string name="store_catalog_installed">Installed</string>
     <string name="store_catalog_incompatible_signature">Incompatible signature</string>
+    <string name="store_catalog_install_success">Installed successfully</string>
+    <string name="store_catalog_install_failure">Installation failed</string>
+    <string name="store_catalog_install_progress">Downloading %1$d%%</string>
+    <string name="store_catalog_install_progress_with_speed">%1$d%% • %2$s/s</string>
+    <string name="store_catalog_install_progress_with_eta">%1$d%% • %2$s/s • ~%3$s</string>
+    <string name="store_catalog_install_no_reason">Unknown error</string>
+    <string name="store_catalog_status_queued">Queued…</string>
+    <string name="store_catalog_status_installing">Installing…</string>
     <string name="action_update_all">"Update all"</string>
     <string name="action_update_anyway">Update anyway</string>
     <string name="action_view_on_play">"View on Play Store"</string>

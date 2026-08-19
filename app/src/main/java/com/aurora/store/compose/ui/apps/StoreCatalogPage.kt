@@ -5,6 +5,7 @@
 
 package com.aurora.store.compose.ui.apps
 
+import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,17 +15,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +52,7 @@ import com.aurora.store.data.room.download.Download
 import com.aurora.store.util.CertUtil
 import com.aurora.store.util.CommonUtil
 import com.aurora.store.util.PackageUtil
+import com.aurora.store.viewmodel.store.InstallResult
 import com.aurora.store.viewmodel.store.StoreCatalogViewModel
 
 @Composable
@@ -55,9 +63,13 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
     val hasError by viewModel.hasError.collectAsStateWithLifecycle()
     val installationRevision by viewModel.installationRevision.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var result by remember { mutableStateOf<InstallResult?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.installFailed.collect { context.toast(R.string.store_catalog_error) }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.installResult.collect { result = it }
     }
 
     StoreCatalogContent(
@@ -71,6 +83,17 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
         onRetry = viewModel::retry,
         onRefresh = viewModel::refresh
     )
+
+    result?.let { current ->
+        InstallResultDialog(
+            result = current,
+            onRetry = {
+                viewModel.retry(current.packageName)
+                result = null
+            },
+            onDismiss = { result = null }
+        )
+    }
 }
 
 @Composable
@@ -187,30 +210,203 @@ private fun StoreCatalogItem(
             )
         }
         Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
-        when {
-            download?.isActive == true -> OutlinedButton(onClick = onCancel) {
+        CatalogActionArea(
+            modifier = Modifier.widthIn(max = dimensionResource(R.dimen.action_area_max_width)),
+            download = download,
+            packageState = packageState,
+            matchesCurrentArtifact = matchesCurrentArtifact,
+            onInstall = onInstall,
+            onCancel = onCancel,
+            onRetry = onRetry
+        )
+    }
+}
+
+@Composable
+private fun CatalogActionArea(
+    modifier: Modifier = Modifier,
+    download: Download?,
+    packageState: CatalogPackageState,
+    matchesCurrentArtifact: Boolean,
+    onInstall: () -> Unit,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit
+) {
+    when {
+        download?.status == DownloadStatus.INSTALLING -> {
+            InstallingState(modifier = modifier, onCancel = onCancel)
+        }
+        download?.isActive == true -> {
+            DownloadingState(modifier = modifier, download = download, onCancel = onCancel)
+        }
+        !packageState.hasValidSigner -> OutlinedButton(modifier = modifier, onClick = {
+        }, enabled = false) {
+            Text(stringResource(R.string.store_catalog_incompatible_signature))
+        }
+        download?.status == DownloadStatus.FAILED && matchesCurrentArtifact ->
+            OutlinedButton(modifier = modifier, onClick = onRetry) {
+                Text(stringResource(R.string.action_retry))
+            }
+        packageState.isUpToDate -> OutlinedButton(modifier = modifier, onClick = {
+        }, enabled = false) {
+            Text(stringResource(R.string.store_catalog_installed))
+        }
+        else -> Button(modifier = modifier, onClick = onInstall) {
+            Text(
+                stringResource(
+                    if (packageState.isInstalled) {
+                        R.string.action_update
+                    } else {
+                        R.string.action_install
+                    }
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun DownloadingState(
+    modifier: Modifier = Modifier,
+    download: Download,
+    onCancel: () -> Unit
+) {
+    val context = LocalContext.current
+    val progressLabel = remember(
+        download.status,
+        download.progress,
+        download.speed,
+        download.timeRemaining
+    ) {
+        formatDownloadProgress(context, download)
+    }
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(
+            dimensionResource(R.dimen.spacing_xsmall)
+        )
+    ) {
+        LinearProgressIndicator(
+            progress = { (download.progress.coerceIn(0, 100)) / 100f },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = progressLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            OutlinedButton(onClick = onCancel) {
                 Text(stringResource(R.string.action_cancel))
             }
-            !packageState.hasValidSigner -> OutlinedButton(onClick = {}, enabled = false) {
-                Text(stringResource(R.string.store_catalog_incompatible_signature))
+        }
+    }
+}
+
+@Composable
+private fun InstallingState(modifier: Modifier = Modifier, onCancel: () -> Unit) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(
+            dimensionResource(R.dimen.spacing_xsmall)
+        )
+    ) {
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.store_catalog_status_installing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            OutlinedButton(onClick = onCancel) {
+                Text(stringResource(R.string.action_cancel))
             }
-            download?.status == DownloadStatus.FAILED && matchesCurrentArtifact ->
-                OutlinedButton(onClick = onRetry) {
-                    Text(stringResource(R.string.action_retry))
+        }
+    }
+}
+
+@Composable
+private fun InstallResultDialog(result: InstallResult, onRetry: () -> Unit, onDismiss: () -> Unit) {
+    when (result) {
+        is InstallResult.Success -> AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.store_catalog_install_success)) },
+            text = { Text(result.displayName) },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(android.R.string.ok))
                 }
-            packageState.isUpToDate -> OutlinedButton(onClick = {}, enabled = false) {
-                Text(stringResource(R.string.store_catalog_installed))
             }
-            else -> Button(onClick = onInstall) {
-                Text(
-                    stringResource(
-                        if (packageState.isInstalled) {
-                            R.string.action_update
-                        } else {
-                            R.string.action_install
-                        }
-                    )
+        )
+        is InstallResult.Failure -> {
+            val reason = result.reason
+                ?: stringResource(R.string.store_catalog_install_no_reason)
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text(stringResource(R.string.store_catalog_install_failure)) },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(
+                            dimensionResource(R.dimen.spacing_small)
+                        )
+                    ) {
+                        Text(result.displayName)
+                        Text(
+                            text = reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = onRetry) {
+                        Text(stringResource(R.string.action_retry))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(android.R.string.cancel))
+                    }
+                }
+            )
+        }
+    }
+}
+
+private fun formatDownloadProgress(context: android.content.Context, download: Download): String {
+    val percent = download.progress.coerceIn(0, 100)
+    val placeholder = context.getString(R.string.store_catalog_status_queued)
+    return when (download.status) {
+        DownloadStatus.QUEUED,
+        DownloadStatus.PURCHASING -> placeholder
+        else -> {
+            val speed = download.speed
+            val eta = download.timeRemaining
+            when {
+                speed > 0L && eta > 0L -> context.getString(
+                    R.string.store_catalog_install_progress_with_eta,
+                    percent,
+                    Formatter.formatShortFileSize(context, speed),
+                    CommonUtil.getETAString(context, eta)
                 )
+                speed > 0L -> context.getString(
+                    R.string.store_catalog_install_progress_with_speed,
+                    percent,
+                    Formatter.formatShortFileSize(context, speed)
+                )
+                else -> context.getString(R.string.store_catalog_install_progress, percent)
             }
         }
     }
