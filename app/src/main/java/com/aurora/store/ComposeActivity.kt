@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.extensions.getPackageName
 import com.aurora.store.R
+import com.aurora.store.compose.composition.LocalLayoutScale
 import com.aurora.store.compose.composition.LocalNetworkStatus
 import com.aurora.store.compose.composition.LocalUI
 import com.aurora.store.compose.composition.UI
@@ -41,6 +42,7 @@ import com.aurora.store.data.providers.NetworkProvider
 import com.aurora.store.data.receiver.MigrationReceiver
 import com.aurora.store.util.AppLockAuthenticator
 import com.aurora.store.util.PackageUtil
+import com.aurora.store.util.currentScreenScale
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -69,68 +71,72 @@ class ComposeActivity : FragmentActivity() {
             val networkStatus by networkProvider.status.collectAsStateWithLifecycle(
                 initialValue = NetworkStatus.AVAILABLE
             )
-            AuroraTheme {
-                var lockState by remember {
-                    mutableStateOf(
-                        if (appLockManager.shouldLock(this@ComposeActivity)) {
-                            LockState.AUTHENTICATING
-                        } else {
-                            LockState.UNLOCKED
-                        }
-                    )
-                }
+            val layoutScale = currentScreenScale()
+            CompositionLocalProvider(LocalLayoutScale provides layoutScale) {
+                AuroraTheme {
+                    var lockState by remember {
+                        mutableStateOf(
+                            if (appLockManager.shouldLock(this@ComposeActivity)) {
+                                LockState.AUTHENTICATING
+                            } else {
+                                LockState.UNLOCKED
+                            }
+                        )
+                    }
 
-                // Keep FLAG_SECURE on until unlocked; auto-prompt while authenticating
-                LaunchedEffect(lockState) {
+                    // Keep FLAG_SECURE on until unlocked; auto-prompt while authenticating
+                    LaunchedEffect(lockState) {
+                        when (lockState) {
+                            LockState.AUTHENTICATING -> {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                                promptUnlock(
+                                    onSuccess = { lockState = LockState.UNLOCKED },
+                                    onError = { lockState = LockState.LOCKED }
+                                )
+                            }
+
+                            LockState.LOCKED ->
+                                window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                            LockState.UNLOCKED ->
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
+                    }
+
+                    // Re-lock when returning from the background past the grace timeout
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            when (event) {
+                                Lifecycle.Event.ON_STOP -> appLockManager.onBackgrounded()
+                                Lifecycle.Event.ON_START ->
+                                    if (lockState == LockState.UNLOCKED &&
+                                        appLockManager.shouldLock(this@ComposeActivity)
+                                    ) {
+                                        lockState = LockState.AUTHENTICATING
+                                    }
+
+                                else -> {}
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                    }
+
                     when (lockState) {
-                        LockState.AUTHENTICATING -> {
-                            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                            promptUnlock(
-                                onSuccess = { lockState = LockState.UNLOCKED },
-                                onError = { lockState = LockState.LOCKED }
-                            )
+                        LockState.UNLOCKED -> CompositionLocalProvider(
+                            LocalUI provides localUI,
+                            LocalNetworkStatus provides networkStatus
+                        ) {
+                            NavDisplay(startDestination = startDestination)
                         }
 
-                        LockState.LOCKED -> window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                        LockState.UNLOCKED ->
-                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        // Plain surface behind the prompt so dismissing it doesn't flash the lock card
+                        LockState.AUTHENTICATING -> Surface(modifier = Modifier.fillMaxSize()) {}
+
+                        LockState.LOCKED -> AppLockScreen(
+                            onUnlock = { lockState = LockState.AUTHENTICATING }
+                        )
                     }
-                }
-
-                // Re-lock when returning from the background past the grace timeout
-                val lifecycleOwner = LocalLifecycleOwner.current
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        when (event) {
-                            Lifecycle.Event.ON_STOP -> appLockManager.onBackgrounded()
-                            Lifecycle.Event.ON_START ->
-                                if (lockState == LockState.UNLOCKED &&
-                                    appLockManager.shouldLock(this@ComposeActivity)
-                                ) {
-                                    lockState = LockState.AUTHENTICATING
-                                }
-
-                            else -> {}
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-                }
-
-                when (lockState) {
-                    LockState.UNLOCKED -> CompositionLocalProvider(
-                        LocalUI provides localUI,
-                        LocalNetworkStatus provides networkStatus
-                    ) {
-                        NavDisplay(startDestination = startDestination)
-                    }
-
-                    // Plain surface behind the prompt so dismissing it doesn't flash the lock card
-                    LockState.AUTHENTICATING -> Surface(modifier = Modifier.fillMaxSize()) {}
-
-                    LockState.LOCKED -> AppLockScreen(
-                        onUnlock = { lockState = LockState.AUTHENTICATING }
-                    )
                 }
             }
         }
