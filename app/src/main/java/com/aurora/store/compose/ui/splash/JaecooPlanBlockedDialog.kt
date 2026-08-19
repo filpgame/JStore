@@ -5,7 +5,6 @@
 
 package com.aurora.store.compose.ui.splash
 
-import android.content.Intent
 import android.util.Log
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -42,13 +41,15 @@ fun JaecooPlanBlockedDialog(
         } else {
             stringResource(R.string.jconfig_gate_message_fresh)
         }
-        JaecooPlanResult.IDENTITY_UNAVAILABLE -> stringResource(R.string.jconfig_gate_message_identity)
+        JaecooPlanResult.IDENTITY_UNAVAILABLE -> stringResource(
+            R.string.jconfig_gate_message_identity
+        )
         JaecooPlanResult.LOADING -> stringResource(R.string.jconfig_gate_message_loading)
         JaecooPlanResult.JCONFIG_OUTDATED -> stringResource(R.string.jconfig_gate_message_outdated)
         JaecooPlanResult.JCONFIG_UNAVAILABLE,
         JaecooPlanResult.ERROR -> stringResource(R.string.jconfig_gate_message_unavailable)
         JaecooPlanResult.TRIAL,
-        JaecooPlanResult.PREMIUM -> return  // gate passed; dialog should not be rendered
+        JaecooPlanResult.PREMIUM -> return // gate passed; dialog should not be rendered
     }
 
     val jconfigLauncher = remember(context) {
@@ -83,6 +84,8 @@ fun JaecooPlanBlockedDialog(
                     Text(stringResource(R.string.jconfig_gate_open_jconfig))
                 }
             }
-        } else null
+        } else {
+            null
+        }
     )
 }

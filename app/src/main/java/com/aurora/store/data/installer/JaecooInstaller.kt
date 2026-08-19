@@ -373,6 +373,7 @@ class JaecooInstaller @Inject constructor(
         const val BRIDGE_ACTION = "com.jaecoo.installer.bridge.BIND"
         const val BRIDGE_PACKAGE = "com.frodrigues.jconfig"
         const val MIN_SERVICE_VERSION = 1
+
         /**
          * Minimum bridge version that exposes `getEntitlement()`. Older Jconfigs return
          * [JaecooPlanResult.JCONFIG_OUTDATED] instead of silently failing with a "service

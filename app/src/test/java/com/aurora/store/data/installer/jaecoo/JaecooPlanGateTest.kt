@@ -9,11 +9,11 @@ import com.aurora.store.data.installer.JaecooInstaller
 import com.google.common.truth.Truth.assertThat
 import com.jaecoo.installer.bridge.IJaecooInstallerBridge
 import com.jaecoo.installer.bridge.InstallerCapabilities
-import kotlinx.coroutines.runBlocking
-import org.junit.Test
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
 
 class JaecooPlanGateTest {
     // ---- pure mapping ----------------------------------------------------
@@ -134,11 +134,15 @@ private fun fakeBridge(
     entitlementWire: String? = null,
     capabilitiesBehavior: () -> InstallerCapabilities = {
         InstallerCapabilities(
-            /* protocolVersion = */ 1,
+            /* protocolVersion = */
+            1,
             serviceVersion,
-            /* androidSdk = */ 33,
-            /* isDeviceOwner = */ true,
-            /* servicePackage = */ "com.frodrigues.jconfig"
+            /* androidSdk = */
+            33,
+            /* isDeviceOwner = */
+            true,
+            /* servicePackage = */
+            "com.frodrigues.jconfig"
         )
     },
     entitlementBehavior: () -> String = { entitlementWire ?: error("not set") }

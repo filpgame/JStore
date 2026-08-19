@@ -7,10 +7,10 @@ package com.aurora.store.data.installer.jaecoo
 
 import com.aurora.store.data.installer.JaecooInstaller
 import com.jaecoo.installer.bridge.IJaecooInstallerBridge
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Possible outcomes of a Jconfig plan-gate check. */
 enum class JaecooPlanResult {
@@ -73,7 +73,8 @@ class JaecooPlanGate(
         val bridge = bridgeSource()
             ?: return@withContext JaecooPlanResult.JCONFIG_UNAVAILABLE
         val supportsEntitlement = runCatching {
-            bridge.capabilities.serviceVersion >= JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT
+            bridge.capabilities.serviceVersion >=
+                JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT
         }.getOrDefault(false)
         if (!supportsEntitlement) return@withContext JaecooPlanResult.JCONFIG_OUTDATED
         val wire = runCatching { bridge.entitlement }.getOrNull()

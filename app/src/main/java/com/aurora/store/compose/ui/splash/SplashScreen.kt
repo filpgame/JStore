@@ -67,16 +67,16 @@ import com.aurora.store.data.installer.jaecoo.JaecooPlanResult
 import com.aurora.store.data.model.AuthState
 import com.aurora.store.data.model.NetworkStatus
 import com.aurora.store.data.work.ExodusTrackerWorker
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import com.aurora.store.util.CertUtil.GOOGLE_ACCOUNT_TYPE
 import com.aurora.store.util.CertUtil.GOOGLE_PLAY_AUTH_TOKEN_TYPE
 import com.aurora.store.util.CertUtil.GOOGLE_PLAY_CERT
 import com.aurora.store.util.PackageUtil
 import com.aurora.store.util.Preferences
 import com.aurora.store.viewmodel.auth.AuthViewModel
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.launch
 
 /**
@@ -406,7 +406,9 @@ fun SplashScreen(
                     }
                 }
             },
-            onOpenJconfig = { /* Jconfig launcher handled inside the dialog; nothing further here. */ }
+            onOpenJconfig = {
+                /* Jconfig launcher handled inside the dialog; nothing further here. */
+            }
         )
     }
 }
