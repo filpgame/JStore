@@ -12,6 +12,7 @@ import android.content.ServiceConnection
 import android.net.Uri
 import android.os.IBinder
 import android.os.RemoteException
+import com.aurora.gplayapi.data.models.PlayFile
 import com.aurora.store.data.installer.base.InstallerBase
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.util.PathUtil
@@ -254,7 +255,7 @@ class JaecooInstaller @Inject constructor(
 
     private fun request(download: Download, attemptId: String): InstallRequest {
         val grantedUris = mutableListOf<Uri>()
-        fun artifact(file: File): InstallArtifact {
+        fun artifact(file: File, isBase: Boolean): InstallArtifact {
             val uri = getUri(file)
             appContext.grantUriPermission(
                 BRIDGE_PACKAGE,
@@ -262,21 +263,38 @@ class JaecooInstaller @Inject constructor(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
             grantedUris += uri
-            return InstallArtifact(uri, file.name, file.length(), sha256(file))
+            // The Jaecoo bridge protocol identifies the base APK by the literal name
+            // "base.apk". On-disk names come from the download source (Play Store or
+            // catalog) and vary, so the identified base is mapped onto that contract.
+            val name = if (isBase) BASE_APK_NAME else file.name
+            return InstallArtifact(uri, name, file.length(), sha256(file))
         }
-        fun group(packageName: String, version: Long, files: List<File>) =
-            InstallArtifactGroup(packageName, version, files.map(::artifact))
+        fun group(
+            packageName: String,
+            version: Long,
+            files: List<File>,
+            playFiles: List<PlayFile>
+        ): InstallArtifactGroup {
+            val baseNames = selectBaseArtifactNames(files, playFiles)
+            return InstallArtifactGroup(
+                packageName,
+                version,
+                files.map { file -> artifact(file, isBase = file.name in baseNames) }
+            )
+        }
         try {
             val app = group(
                 download.packageName,
                 download.versionCode,
-                getFiles(download.packageName, download.versionCode)
+                getFiles(download.packageName, download.versionCode),
+                download.fileList
             )
             val libraries = download.sharedLibs.map { library ->
                 group(
                     library.packageName,
                     library.versionCode,
-                    getFiles(download.packageName, download.versionCode, library.packageName)
+                    getFiles(download.packageName, download.versionCode, library.packageName),
+                    library.fileList
                 )
             }
             return InstallRequest(
@@ -369,6 +387,7 @@ class JaecooInstaller @Inject constructor(
         const val STATE_FAILURE = 4
         const val STATE_CANCELLED = 5
         const val BIND_TIMEOUT_SECONDS = 5L
+        const val BASE_APK_NAME = "base.apk"
         val TERMINAL_STATES = setOf(STATE_SUCCESS, STATE_FAILURE, STATE_CANCELLED)
     }
 }
@@ -445,5 +464,43 @@ private class JaecooInstallLedger(context: Context) {
                 uris = it[6].split("\u001f").filter(String::isNotBlank).map(Uri::parse)
             )
         }
+    }
+}
+
+/**
+ * Picks the on-disk files that should be reported to the Jaecoo bridge as the base
+ * APK. The bridge identifies the base by the literal name [JaecooInstaller.BASE_APK_NAME],
+ * but downloaded APKs keep whatever name they were fetched with (Play Store splits, the
+ * jconfig.app catalog, etc.), so we map the identified base onto that contract here.
+ *
+ * Resolution rules:
+ *  1. Prefer [PlayFile.Type.BASE] entries that have a matching file on disk.
+ *  2. If no entry in [playFiles] is typed as [PlayFile.Type.BASE] AND exactly one
+ *     file is on disk, fall back to that single file (catalog single-APK entries,
+ *     which omit `type` and so have no BASE-typed entry to match against).
+ *  3. Otherwise return an empty set, letting the bridge surface BASE_APK_MISSING as
+ *     the diagnostic instead of guessing.
+ *
+ * A [PlayFile.Type.BASE] entry whose file is missing from disk is intentionally NOT
+ * masked by rule 2 — we never silently relabel a different APK as the base.
+ *
+ * If multiple [PlayFile.Type.BASE] entries match on disk, all of them are reported
+ * as base. The bridge then fails fast with BASE_APK_DUPLICATE; the producer does
+ * not try to disambiguate silently.
+ */
+internal fun selectBaseArtifactNames(
+    files: List<File>,
+    playFiles: List<PlayFile>
+): Set<String> {
+    val onDiskNames = files.mapTo(HashSet()) { it.name }
+    val declaredBase = playFiles.asSequence()
+        .filter { it.type == PlayFile.Type.BASE }
+        .map { it.name }
+        .toList()
+    val matched = declaredBase.intersect(onDiskNames).toSet()
+    return when {
+        matched.isNotEmpty() -> matched
+        declaredBase.isEmpty() && files.size == 1 -> setOf(files.single().name)
+        else -> emptySet()
     }
 }
