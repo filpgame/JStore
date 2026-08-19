@@ -46,6 +46,13 @@ object Preferences {
     const val PREFERENCE_DEFAULT_SELECTED_TAB = "PREFERENCE_DEFAULT_SELECTED_TAB"
     const val PREFERENCE_INTRO = "PREFERENCE_INTRO"
 
+    /**
+     * Fingerprint of the Jaecoo Generic HU Tablet provisioning input. Bump the `_V#` suffix
+     * whenever the merge algorithm changes so older rows no longer match and provisioning
+     * re-runs cleanly.
+     */
+    const val PREFERENCE_JAECOO_PROFILE_SIGNATURE = "PREFERENCE_JAECOO_PROFILE_SIGNATURE_V1"
+
     const val PREFERENCE_FILTER_FDROID = "PREFERENCE_FILTER_FDROID"
     const val PREFERENCE_FILTER_AURORA_ONLY = "PREFERENCE_FILTER_AURORA_ONLY"
     const val PREFERENCE_FILTER_INSTALLERS = "PREFERENCE_FILTER_INSTALLERS"

@@ -34,6 +34,7 @@ import com.aurora.store.data.model.AccountType
 import com.aurora.store.data.model.AuthState
 import com.aurora.store.data.providers.AccountProvider
 import com.aurora.store.data.providers.AuthProvider
+import com.aurora.store.data.providers.SpoofProvider
 import com.aurora.store.util.AC2DMTask
 import com.aurora.store.util.PackageUtil
 import com.aurora.store.util.Preferences
@@ -52,6 +53,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     val authProvider: AuthProvider,
+    private val spoofProvider: SpoofProvider,
     @ApplicationContext private val context: Context,
     private val aC2DMTask: AC2DMTask
 ) : ViewModel() {
@@ -157,6 +159,25 @@ class AuthViewModel @Inject constructor(
     }
 
     fun retry() = updateAuthState()
+
+    /**
+     * Provision the Jaecoo default device spoof. Returns `true` when the persisted spoof was
+     * rewritten (caller should then call [invalidateAuthForProfileChange]); `false` when nothing
+     * changed (existing AuthData is still safe to reuse).
+     */
+    fun provisionJaecooDefault(): Boolean = spoofProvider.provisionJaecooDefault()
+
+    /**
+     * Clears the persisted AuthData and resets the auth state to [AuthState.Unavailable]. Called
+     * after [provisionJaecooDefault] rewrites the device profile, since the cached AuthData was
+     * minted for the previous profile and must not be sent to Google Play again.
+     */
+    fun invalidateAuthForProfileChange() {
+        viewModelScope.launch(Dispatchers.IO) {
+            authProvider.removeAuthData(context)
+            _authState.value = AuthState.Unavailable
+        }
+    }
 
     private fun updateAuthState() {
         if (_authState.value != AuthState.Fetching) {

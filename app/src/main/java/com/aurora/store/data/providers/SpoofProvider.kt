@@ -20,9 +20,15 @@
 package com.aurora.store.data.providers
 
 import android.content.Context
+import android.os.Build
+import android.util.Log
+import androidx.annotation.VisibleForTesting
+import com.aurora.extensions.TAG
 import com.aurora.store.BuildConfig
 import com.aurora.store.R
 import com.aurora.store.util.Preferences
+import com.aurora.store.util.Preferences.PREFERENCE_AUTH_DATA
+import com.aurora.store.util.Preferences.PREFERENCE_JAECOO_PROFILE_SIGNATURE
 import com.aurora.store.util.Preferences.PREFERENCE_VENDING_VERSION
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
@@ -48,10 +54,34 @@ class SpoofProvider @Inject constructor(
         private const val DEVICE_SPOOF_ENABLED = "DEVICE_SPOOF_ENABLED"
         private const val DEVICE_SPOOF_PROPERTIES = "DEVICE_SPOOF_PROPERTIES"
 
-        // The vehicle's native DesaySV profile is not recognised by Google Play. Keep this
-        // aligned with Android 11 and the head unit's arm64 ABI until it has its own catalog
-        // profile.
-        private const val JAECOO_DEFAULT_DEVICE_CONFIG = "res/raw/gplayapi_poco_f1.properties"
+        const val JAECOO_PROFILE_NAME = "Jaecoo Generic HU Tablet"
+
+        /** Bump when the merge algorithm changes so persisted signatures stop matching. */
+        const val JAECOO_PROFILE_REVISION = "1"
+
+        const val JAECOO_API_27_ASSET = "jaecoo_profiles/api27.properties"
+        const val JAECOO_CAPABILITY_ASSET = "jaecoo_hu_capabilities.properties"
+
+        /**
+         * Highest-API first. The first entry whose `UserReadableName` matches one of the gplayapi
+         * bundled profiles wins for the current [Build.VERSION.SDK_INT].
+         */
+        val JAECOO_BUILT_IN_BY_MIN_SDK: List<Pair<Int, String>> = listOf(
+            35 to "Google Pixel 9a",
+            34 to "Nothing Phone(1)",
+            33 to "Google Pixel Tablet",
+            29 to "Nokia 1.3"
+        )
+
+        /** Keys overwritten with HU/tablet values when provisioning. */
+        private val CAPABILITY_KEYS = listOf(
+            "TouchScreen",
+            "Keyboard",
+            "Navigation",
+            "ScreenLayout",
+            "HasHardKeyboard",
+            "HasFiveWayNavigation"
+        )
     }
 
     val availableSpoofDeviceProperties get() = availableDeviceProperties
@@ -73,9 +103,7 @@ class SpoofProvider @Inject constructor(
 
     private val defaultDeviceProperties: Properties by lazy {
         if (BuildConfig.FLAVOR == "jaecoo") {
-            availableDeviceProperties.firstOrNull {
-                it.getProperty("CONFIG_NAME") == JAECOO_DEFAULT_DEVICE_CONFIG
-            } ?: NativeDeviceInfoProvider.getNativeDeviceProperties(context)
+            selectJaecooBaseProfile() ?: NativeDeviceInfoProvider.getNativeDeviceProperties(context)
         } else {
             NativeDeviceInfoProvider.getNativeDeviceProperties(context)
         }
@@ -125,6 +153,96 @@ class SpoofProvider @Inject constructor(
     fun removeSpoofDeviceProperties() {
         Preferences.remove(context, DEVICE_SPOOF_ENABLED)
         Preferences.remove(context, DEVICE_SPOOF_PROPERTIES)
+    }
+
+    /**
+     * Selects the Jaecoo base profile for the current API level. For API < 29, the bundled
+     * `assets/jaecoo_profiles/api27.properties` is loaded from the APK assets; otherwise the first
+     * matching entry from [JAECOO_BUILT_IN_BY_MIN_SDK] is returned from the gplayapi library.
+     *
+     * Visible for tests; not part of the public API.
+     */
+    @VisibleForTesting
+    internal fun selectJaecooBaseProfile(): Properties? {
+        val sdk = Build.VERSION.SDK_INT
+        val (minSdk, name) = JAECOO_BUILT_IN_BY_MIN_SDK.firstOrNull { (min, _) -> sdk >= min }
+            ?: return loadJaecooAsset()
+        return availableDeviceProperties.firstOrNull { it.getProperty("UserReadableName") == name }
+            ?: loadJaecooAsset()
+    }
+
+    private fun loadJaecooAsset(): Properties? = runCatching {
+        val properties = Properties()
+        context.assets.open(JAECOO_API_27_ASSET).use { properties.load(it) }
+        properties.setProperty("CONFIG_NAME", JAECOO_API_27_ASSET)
+        properties
+    }.onFailure {
+        Log.w(TAG, "Could not load Jaecoo fallback profile from assets", it)
+    }.getOrNull()
+
+    /**
+     * Fingerprint of the Jaecoo base profile. Returns `null` when no base profile is available.
+     * The signature is intentionally derived from the *base* (pre-merge) profile so that
+     * re-provisioning only happens when the underlying device changes.
+     */
+    fun jaecooProfileSignature(): String? {
+        val base = selectJaecooBaseProfile() ?: return null
+        return listOf(
+            JAECOO_PROFILE_REVISION,
+            base.getProperty("Build.FINGERPRINT"),
+            base.getProperty("Build.VERSION.SDK_INT"),
+            base.getProperty("Build.VERSION.RELEASE"),
+            base.getProperty("Platforms"),
+            base.getProperty("SharedLibraries"),
+            base.getProperty("GL.Version")
+        ).joinToString("|")
+    }
+
+    /**
+     * Provisions the [JAECOO_PROFILE_NAME] device spoof for the Jaecoo flavor. The base profile is
+     * chosen by API, HU/tablet capabilities from [JAECOO_CAPABILITY_ASSET] overwrite the matching
+     * keys, and the merged profile is persisted as the active spoof. Re-provisioning is skipped
+     * when the persisted profile already carries the Jaecoo name and the signature is unchanged.
+     *
+     * Returns `true` when the persisted spoof was rewritten, `false` when no work was performed
+     * (caller is free to keep the existing AuthData in that case).
+     */
+    fun provisionJaecooDefault(): Boolean {
+        if (BuildConfig.FLAVOR != "jaecoo") return false
+        val base = selectJaecooBaseProfile() ?: run {
+            Log.w(TAG, "No Jaecoo base profile available; skipping provisioning")
+            return false
+        }
+        val signature = jaecooProfileSignature() ?: return false
+        val alreadyApplied =
+            isDeviceSpoofEnabled &&
+                spoofDeviceProperties.getProperty("UserReadableName") == JAECOO_PROFILE_NAME &&
+                Preferences.getString(context, PREFERENCE_JAECOO_PROFILE_SIGNATURE) == signature
+        if (alreadyApplied) return false
+
+        val capabilities = Properties().apply {
+            context.assets.open(JAECOO_CAPABILITY_ASSET).use { load(it) }
+        }
+
+        val merged = Properties().apply { putAll(base) }
+        merged.setProperty("UserReadableName", JAECOO_PROFILE_NAME)
+        for (key in CAPABILITY_KEYS) {
+            capabilities.getProperty(key)?.let { merged.setProperty(key, it) }
+        }
+        val baseFeatures = base.getProperty("Features").orEmpty().split(',')
+        val capabilityFeatures = capabilities.getProperty("Features").orEmpty().split(',')
+        val mergedFeatures = (baseFeatures + capabilityFeatures)
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(",")
+        merged.setProperty("Features", mergedFeatures)
+
+        setSpoofDeviceProperties(merged)
+        Preferences.putString(context, PREFERENCE_JAECOO_PROFILE_SIGNATURE, signature)
+        // Reprovisioning changes the device identity, so any cached AuthData would be sent with
+        // a stale profile. Drop it; the next AuthViewModel cycle will rebuild from scratch.
+        Preferences.remove(context, PREFERENCE_AUTH_DATA)
+        return true
     }
 
     private fun setVendingVersion(currentProperties: Properties) {
