@@ -70,7 +70,7 @@ class SpoofProvider @Inject constructor(
             35 to "Google Pixel 9a",
             34 to "Nothing Phone(1)",
             33 to "Google Pixel Tablet",
-            29 to "Nokia 1.3",
+            29 to "Nokia 1.3"
         )
 
         /** Keys overwritten with HU/tablet values when provisioning. */
@@ -80,7 +80,7 @@ class SpoofProvider @Inject constructor(
             "Navigation",
             "ScreenLayout",
             "HasHardKeyboard",
-            "HasFiveWayNavigation",
+            "HasFiveWayNavigation"
         )
     }
 
@@ -194,7 +194,7 @@ class SpoofProvider @Inject constructor(
             base.getProperty("Build.VERSION.RELEASE"),
             base.getProperty("Platforms"),
             base.getProperty("SharedLibraries"),
-            base.getProperty("GL.Version"),
+            base.getProperty("GL.Version")
         ).joinToString("|")
     }
 
@@ -229,8 +229,9 @@ class SpoofProvider @Inject constructor(
         for (key in CAPABILITY_KEYS) {
             capabilities.getProperty(key)?.let { merged.setProperty(key, it) }
         }
-        val mergedFeatures = (base.getProperty("Features").orEmpty().split(',') +
-            capabilities.getProperty("Features").orEmpty().split(','))
+        val baseFeatures = base.getProperty("Features").orEmpty().split(',')
+        val capabilityFeatures = capabilities.getProperty("Features").orEmpty().split(',')
+        val mergedFeatures = (baseFeatures + capabilityFeatures)
             .filter { it.isNotBlank() }
             .distinct()
             .joinToString(",")
