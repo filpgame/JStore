@@ -617,4 +617,17 @@
         <item quantity="many">%d apps falharam</item>
         <item quantity="other">%d apps falharam</item>
     </plurals>
+    <string name="tab_j7">Carro</string>
+    <string name="store_catalog_empty">Não há aplicações disponíveis para este dispositivo</string>
+    <string name="store_catalog_error">Não foi possível carregar o catálogo de aplicações do dispositivo</string>
+    <string name="store_catalog_installed">Instalado</string>
+    <string name="store_catalog_incompatible_signature">Assinatura incompatível</string>
+    <string name="store_catalog_install_success">Instalado com sucesso</string>
+    <string name="store_catalog_install_failure">Falha na instalação</string>
+    <string name="store_catalog_install_progress">A transferir %1$d%%</string>
+    <string name="store_catalog_install_progress_with_speed">%1$d%% • %2$s/s</string>
+    <string name="store_catalog_install_progress_with_eta">%1$d%% • %2$s/s • ~%3$s</string>
+    <string name="store_catalog_install_no_reason">Erro desconhecido</string>
+    <string name="store_catalog_status_queued">Em fila…</string>
+    <string name="store_catalog_status_installing">A instalar…</string>
 </resources>

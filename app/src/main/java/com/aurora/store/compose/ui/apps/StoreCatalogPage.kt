@@ -81,6 +81,7 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
         onInstall = viewModel::install,
         onCancel = viewModel::cancel,
         onRetry = viewModel::retry,
+        onUninstall = viewModel::uninstall,
         onRefresh = viewModel::refresh
     )
 
@@ -106,6 +107,7 @@ private fun StoreCatalogContent(
     onInstall: (StoreCatalogEntry) -> Unit,
     onCancel: (String) -> Unit,
     onRetry: (String) -> Unit,
+    onUninstall: (StoreCatalogEntry) -> Unit,
     onRefresh: () -> Unit
 ) {
     PullToRefreshBox(
@@ -140,7 +142,8 @@ private fun StoreCatalogContent(
                         installationRevision = installationRevision,
                         onInstall = { onInstall(entry) },
                         onCancel = { onCancel(entry.customPackageId) },
-                        onRetry = { onRetry(entry.customPackageId) }
+                        onRetry = { onRetry(entry.customPackageId) },
+                        onUninstall = { onUninstall(entry) }
                     )
                 }
             }
@@ -155,7 +158,8 @@ private fun StoreCatalogItem(
     installationRevision: Int,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onUninstall: () -> Unit
 ) {
     val context = LocalContext.current
     val packageState = remember(entry, installationRevision) {
@@ -217,7 +221,8 @@ private fun StoreCatalogItem(
             matchesCurrentArtifact = matchesCurrentArtifact,
             onInstall = onInstall,
             onCancel = onCancel,
-            onRetry = onRetry
+            onRetry = onRetry,
+            onUninstall = onUninstall
         )
     }
 }
@@ -230,7 +235,8 @@ private fun CatalogActionArea(
     matchesCurrentArtifact: Boolean,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onUninstall: () -> Unit
 ) {
     when {
         download?.status == DownloadStatus.INSTALLING -> {
@@ -247,9 +253,18 @@ private fun CatalogActionArea(
             OutlinedButton(modifier = modifier, onClick = onRetry) {
                 Text(stringResource(R.string.action_retry))
             }
-        packageState.isUpToDate -> OutlinedButton(modifier = modifier, onClick = {
-        }, enabled = false) {
-            Text(stringResource(R.string.store_catalog_installed))
+        packageState.isUpToDate -> Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(
+                dimensionResource(R.dimen.spacing_xsmall)
+            )
+        ) {
+            OutlinedButton(onClick = {}, enabled = false) {
+                Text(stringResource(R.string.store_catalog_installed))
+            }
+            OutlinedButton(onClick = onUninstall) {
+                Text(stringResource(R.string.action_uninstall))
+            }
         }
         else -> Button(modifier = modifier, onClick = onInstall) {
             Text(

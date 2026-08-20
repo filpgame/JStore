@@ -135,7 +135,7 @@
     <string name="action_home_screen">Add to home screen</string>
     <string name="action_info">"App info"</string>
     <string name="action_update">"Update"</string>
-    <string name="tab_j7" translatable="false">J7</string>
+    <string name="tab_j7">Carro</string>
     <string name="store_catalog_empty">No apps are available for this device</string>
     <string name="store_catalog_error">Could not load the device app catalogue</string>
     <string name="store_catalog_installed">Installed</string>
