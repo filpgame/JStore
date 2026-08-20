@@ -149,6 +149,21 @@ jobs:
             app/build/outputs/apk/jaecoo/release/*.apk
             version.json
 
+      - name: Fetch release notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.version.outputs.tagName }}
+        run: |
+          # `github.event.release.body` is null on tag pushes because no
+          # release exists yet at that point in the workflow; fetch the
+          # notes that ``softprops/action-gh-release`` just generated.
+          BODY="$(gh release view "$TAG_NAME" --json body --jq .body)"
+          BODY="${BODY//$'\n'/\\n}"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Publish to jconfig catalog (dry-run)
         if: ${{ inputs.dry_run == 'true' }}
         env:
@@ -160,7 +175,7 @@ jobs:
           SUMMARY:             ${{ vars.JSTOREC_CATALOG_SUMMARY             || 'Aurora Store build for Jaecoo vehicles' }}
           DEVELOPER_NAME:      ${{ vars.JSTOREC_CATALOG_DEVELOPER           || 'JConfig' }}
           ICON_URL:            ${{ vars.JSTOREC_CATALOG_ICON_URL            || 'https://jconfig.app/brand-icon.png' }}
-          CHANGELOG:           ${{ github.event.release.body || '' }}
+          CHANGELOG:           ${{ steps.notes.outputs.body }}
           SIGNER_SHA256:       ${{ steps.meta.outputs.signerSha256 }}
           SHA256:              ${{ steps.meta.outputs.sha256 }}
           SIZE_BYTES:          ${{ steps.meta.outputs.sizeBytes }}
@@ -198,7 +213,7 @@ jobs:
           SUMMARY:             ${{ vars.JSTOREC_CATALOG_SUMMARY             || 'Aurora Store build for Jaecoo vehicles' }}
           DEVELOPER_NAME:      ${{ vars.JSTOREC_CATALOG_DEVELOPER           || 'JConfig' }}
           ICON_URL:            ${{ vars.JSTOREC_CATALOG_ICON_URL            || 'https://jconfig.app/brand-icon.png' }}
-          CHANGELOG:           ${{ github.event.release.body || '' }}
+          CHANGELOG:           ${{ steps.notes.outputs.body }}
           SIGNER_SHA256:       ${{ steps.meta.outputs.signerSha256 }}
           SHA256:              ${{ steps.meta.outputs.sha256 }}
           SIZE_BYTES:          ${{ steps.meta.outputs.sizeBytes }}
