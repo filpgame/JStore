@@ -36,10 +36,10 @@ internal fun category(pageType: Int): StreamContract.Category =
     if (pageType == 1) StreamContract.Category.GAME else StreamContract.Category.APPLICATION
 
 private enum class AppsTab(@StringRes val titleRes: Int) {
+    J7(R.string.tab_j7),
     FOR_YOU(R.string.tab_for_you),
     TOP_CHARTS(R.string.tab_top_charts),
-    CATEGORIES(R.string.tab_categories),
-    J7(R.string.tab_j7)
+    CATEGORIES(R.string.tab_categories)
 }
 
 @Composable
@@ -64,10 +64,10 @@ fun AppsGamesScreen(
 
     val isForYouEnabled = Preferences.getBoolean(context, Preferences.PREFERENCE_FOR_YOU)
     val tabs = buildList {
+        if (pageType == 0) add(AppsTab.J7)
         if (isForYouEnabled) add(AppsTab.FOR_YOU)
         add(AppsTab.TOP_CHARTS)
         add(AppsTab.CATEGORIES)
-        if (pageType == 0) add(AppsTab.J7)
     }
     val pagerState = rememberPagerState { tabs.size }
     val coroutineScope = rememberCoroutineScope()

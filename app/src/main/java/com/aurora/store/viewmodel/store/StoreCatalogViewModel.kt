@@ -5,6 +5,7 @@
 
 package com.aurora.store.viewmodel.store
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,8 +14,10 @@ import com.aurora.store.AuroraApp
 import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.helper.DownloadHelper
+import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -67,6 +70,7 @@ sealed class InstallResult {
 
 @HiltViewModel
 class StoreCatalogViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: StoreCatalogRepository,
     private val downloadHelper: DownloadHelper
 ) : ViewModel() {
@@ -145,5 +149,9 @@ class StoreCatalogViewModel @Inject constructor(
 
     fun retry(packageName: String) {
         viewModelScope.launch { downloadHelper.retryDownload(packageName) }
+    }
+
+    fun uninstall(entry: StoreCatalogEntry) {
+        AppInstaller.uninstall(context, entry.customPackageId)
     }
 }
