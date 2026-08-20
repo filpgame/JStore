@@ -9,6 +9,10 @@ on:
         description: Existing v* tag to rebuild and publish
         required: true
         type: string
+      dry_run:
+        description: Compute catalog payload and print it without POSTing
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -98,6 +102,24 @@ jobs:
           test -f "$APK_PATH"
           "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
 
+      - name: Compute catalog metadata
+        id: meta
+        run: |
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          APK_PATH="$(find app/build/outputs/apk/jaecoo/release -name '*.apk' -type f | head -n 1)"
+          test -x "$APKSIGNER"
+          test -f "$APK_PATH"
+          SIGNER_SHA256="$("$APKSIGNER" verify --print-certs "$APK_PATH" \
+            | awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print tolower($2); exit }')"
+          test -n "$SIGNER_SHA256"
+          SHA256="$(sha256sum "$APK_PATH" | awk '{print $1}')"
+          SIZE_BYTES="$(stat -c %s "$APK_PATH")"
+          APK_NAME="$(basename "$APK_PATH")"
+          echo "signerSha256=${SIGNER_SHA256}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+          echo "sizeBytes=${SIZE_BYTES}" >> "$GITHUB_OUTPUT"
+          echo "apkName=${APK_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Generate version.json
         env:
           VERSION_NAME: ${{ steps.version.outputs.versionName }}
@@ -127,25 +149,84 @@ jobs:
             app/build/outputs/apk/jaecoo/release/*.apk
             version.json
 
-      - name: Publish to update server
+      - name: Publish to jconfig catalog (dry-run)
+        if: ${{ inputs.dry_run == 'true' }}
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.versionName }}
+          VERSION_CODE: ${{ steps.version.outputs.versionCode }}
+          ORIGINAL_PACKAGE_ID: ${{ vars.JSTOREC_CATALOG_ORIGINAL_PACKAGE_ID || 'com.aurora.store' }}
+          CUSTOM_PACKAGE_ID:   ${{ vars.JSTOREC_CATALOG_CUSTOM_PACKAGE_ID   || 'com.aurora.store' }}
+          TITLE:               ${{ vars.JSTOREC_CATALOG_TITLE               || 'JStore' }}
+          SUMMARY:             ${{ vars.JSTOREC_CATALOG_SUMMARY             || 'Aurora Store build for Jaecoo vehicles' }}
+          DEVELOPER_NAME:      ${{ vars.JSTOREC_CATALOG_DEVELOPER           || 'JConfig' }}
+          ICON_URL:            ${{ vars.JSTOREC_CATALOG_ICON_URL            || 'https://jconfig.app/brand-icon.png' }}
+          CHANGELOG:           ${{ github.event.release.body || '' }}
+          SIGNER_SHA256:       ${{ steps.meta.outputs.signerSha256 }}
+          SHA256:              ${{ steps.meta.outputs.sha256 }}
+          SIZE_BYTES:          ${{ steps.meta.outputs.sizeBytes }}
+          APK_NAME:            ${{ steps.meta.outputs.apkName }}
+        run: |
+          cat <<EOF
+          {
+            "originalPackageId": "${ORIGINAL_PACKAGE_ID}",
+            "customPackageId": "${CUSTOM_PACKAGE_ID}",
+            "title": "${TITLE}",
+            "summary": "${SUMMARY}",
+            "developerName": "${DEVELOPER_NAME}",
+            "iconUrl": "${ICON_URL}",
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "apkName": "${APK_NAME}",
+            "downloadUrl": "https://jconfig.app/v1/store/download/${APK_NAME}",
+            "sizeBytes": ${SIZE_BYTES},
+            "sha256": "${SHA256}",
+            "signerSha256": "${SIGNER_SHA256}",
+            "deviceModels": ["J7"],
+            "changelog": "${CHANGELOG}"
+          }
+          EOF
+
+      - name: Publish to jconfig catalog
+        if: ${{ inputs.dry_run != 'true' }}
         env:
           RELEASE_UPLOAD_TOKEN: ${{ secrets.JCONFIG_RELEASE_UPLOAD_TOKEN }}
           VERSION_NAME: ${{ steps.version.outputs.versionName }}
           VERSION_CODE: ${{ steps.version.outputs.versionCode }}
-          TAG_NAME: ${{ steps.version.outputs.tagName }}
+          ORIGINAL_PACKAGE_ID: ${{ vars.JSTOREC_CATALOG_ORIGINAL_PACKAGE_ID || 'com.aurora.store' }}
+          CUSTOM_PACKAGE_ID:   ${{ vars.JSTOREC_CATALOG_CUSTOM_PACKAGE_ID   || 'com.aurora.store' }}
+          TITLE:               ${{ vars.JSTOREC_CATALOG_TITLE               || 'JStore' }}
+          SUMMARY:             ${{ vars.JSTOREC_CATALOG_SUMMARY             || 'Aurora Store build for Jaecoo vehicles' }}
+          DEVELOPER_NAME:      ${{ vars.JSTOREC_CATALOG_DEVELOPER           || 'JConfig' }}
+          ICON_URL:            ${{ vars.JSTOREC_CATALOG_ICON_URL            || 'https://jconfig.app/brand-icon.png' }}
+          CHANGELOG:           ${{ github.event.release.body || '' }}
+          SIGNER_SHA256:       ${{ steps.meta.outputs.signerSha256 }}
+          SHA256:              ${{ steps.meta.outputs.sha256 }}
+          SIZE_BYTES:          ${{ steps.meta.outputs.sizeBytes }}
+          APK_NAME:            ${{ steps.meta.outputs.apkName }}
         run: |
           test -n "$RELEASE_UPLOAD_TOKEN"
           APK_PATH="$(find app/build/outputs/apk/jaecoo/release -name '*.apk' -type f | head -n 1)"
           test -f "$APK_PATH"
           curl --fail-with-body --silent --show-error \
             --retry 3 --retry-delay 10 --retry-all-errors \
-            -X POST "https://jconfig.app/v1/upload" \
+            -X POST "https://jconfig.app/v1/store/catalog" \
             -H "Authorization: Bearer ${RELEASE_UPLOAD_TOKEN}" \
             -F "apk=@${APK_PATH};type=application/vnd.android.package-archive" \
-            -F "versionName=${VERSION_NAME}" \
+            -F "originalPackageId=${ORIGINAL_PACKAGE_ID}" \
+            -F "customPackageId=${CUSTOM_PACKAGE_ID}" \
+            -F "title=${TITLE}" \
+            -F "summary=${SUMMARY}" \
+            -F "developerName=${DEVELOPER_NAME}" \
+            -F "iconUrl=${ICON_URL}" \
             -F "versionCode=${VERSION_CODE}" \
-            -F "tagName=${TAG_NAME}" \
-            -F "app=jstore"
+            -F "versionName=${VERSION_NAME}" \
+            -F "apkName=${APK_NAME}" \
+            -F "downloadUrl=https://jconfig.app/v1/store/download/${APK_NAME}" \
+            -F "sizeBytes=${SIZE_BYTES}" \
+            -F "sha256=${SHA256}" \
+            -F "signerSha256=${SIGNER_SHA256}" \
+            -F 'deviceModels=["J7"]' \
+            -F "changelog=${CHANGELOG}"
 
       - name: Remove temporary keystore
         if: always()

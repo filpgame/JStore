@@ -1,5 +1,11 @@
 name: jaecoo-car
 
+# jaecoo-car builds and signs a Jaecoo APK on every push to main as a
+# signing-pipeline sanity check. It is NOT a release and does NOT publish
+# to the jconfig catalog. Only tag pushes (`v*`) flow through
+# build-release.yml, which is what populates the catalog consumed by
+# UpdateWorker. See ../jconfig-site/docs/adr/0008-store-catalog.md.
+
 on:
   push:
     branches: [main]
