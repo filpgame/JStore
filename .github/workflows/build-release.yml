@@ -109,8 +109,13 @@ jobs:
           APK_PATH="$(find app/build/outputs/apk/jaecoo/release -name '*.apk' -type f | head -n 1)"
           test -x "$APKSIGNER"
           test -f "$APK_PATH"
+          # apksigner prints the digest under "V2 Signer: certificate SHA-256 digest: <hex>"
+          # when the APK is signed with APK Signature Scheme v2 (which is what JaecooRelease
+          # produces). The previous "Signer #1 certificate SHA-256 digest" pattern matched no
+          # line, leaving SIGNER_SHA256 empty and failing the `test -n` check below.
+          # Note: with -F': ', the line splits into three fields, so the hex is in $3.
           SIGNER_SHA256="$("$APKSIGNER" verify --print-certs "$APK_PATH" \
-            | awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print tolower($2); exit }')"
+            | awk -F': ' '/V2 Signer: certificate SHA-256 digest/ { print tolower($3); exit }')"
           test -n "$SIGNER_SHA256"
           SHA256="$(sha256sum "$APK_PATH" | awk '{print $1}')"
           SIZE_BYTES="$(stat -c %s "$APK_PATH")"
