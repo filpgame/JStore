@@ -78,4 +78,6 @@ data class StoreCatalogEntry(
         isFree = true,
         isInstalled = false
     )
+
+    fun applyIconTo(app: App): App = app.copy(iconArtwork = Artwork(url = iconUrl))
 }

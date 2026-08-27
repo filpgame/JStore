@@ -5,6 +5,8 @@
 
 package com.aurora.store.data
 
+import com.aurora.gplayapi.data.models.App
+import com.aurora.gplayapi.data.models.Artwork
 import com.aurora.store.compose.ui.apps.matches
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.download.Download
@@ -14,6 +16,18 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class StoreCatalogItemTest {
+    @Test
+    fun appliesCatalogIconToPlayApp() {
+        val playApp = App(
+            packageName = "com.example.play",
+            iconArtwork = Artwork(url = "https://play.example.com/icon.png")
+        )
+
+        val displayed = item().toEntity().applyIconTo(playApp)
+
+        assertThat(displayed.iconArtwork.url).isEqualTo("https://downloads.example.com/icon.png")
+    }
+
     @Test
     fun createsIntegrityCheckedExternalApk() {
         val entry = item().toEntity()

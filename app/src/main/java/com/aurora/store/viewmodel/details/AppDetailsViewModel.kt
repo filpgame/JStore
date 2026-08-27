@@ -229,7 +229,8 @@ class AppDetailsViewModel @Inject constructor(
                 _isCatalogMapped.value = catalogEntry != null
                 _effectivePackageName.value = catalogEntry?.customPackageId ?: packageName
                 _canReview.value = PackageUtil.isInstalled(context, playPackageName)
-                _app.value = appDetailsHelper.getAppByPackageName(playPackageName).copy(
+                val fetchedApp = appDetailsHelper.getAppByPackageName(playPackageName)
+                _app.value = (catalogEntry?.applyIconTo(fetchedApp) ?: fetchedApp).copy(
                     isInstalled = PackageUtil.isInstalled(
                         context,
                         catalogEntry?.customPackageId ?: packageName
