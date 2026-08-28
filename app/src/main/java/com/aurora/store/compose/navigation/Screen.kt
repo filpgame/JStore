@@ -105,7 +105,10 @@ sealed class Screen : NavKey, Parcelable {
     data object SecurityPreference : Screen()
 
     @Serializable
-    data class Splash(val packageName: String? = null) : Screen()
+    data class Splash(
+        val packageName: String? = null,
+        val pendingDestination: Screen? = null
+    ) : Screen()
 
     @Serializable
     data class Main(val initialTab: Int = 0) : Screen()

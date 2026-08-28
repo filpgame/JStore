@@ -62,8 +62,10 @@ import com.aurora.store.BuildConfig
 import com.aurora.store.R
 import com.aurora.store.compose.composition.LocalNetworkStatus
 import com.aurora.store.compose.navigation.Destination
+import com.aurora.store.compose.navigation.Screen
 import com.aurora.store.data.installer.jaecoo.JaecooPlanGate
 import com.aurora.store.data.installer.jaecoo.JaecooPlanResult
+import com.aurora.store.data.installer.jaecoo.allowsJaecooInstall
 import com.aurora.store.data.model.AuthState
 import com.aurora.store.data.model.NetworkStatus
 import com.aurora.store.data.work.ExodusTrackerWorker
@@ -102,6 +104,7 @@ fun SplashScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     deepLinkPackageName: String? = null,
     deepLinkDevId: String? = null,
+    pendingDestination: Screen? = null,
     onNavigateTo: (Destination) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -146,11 +149,29 @@ fun SplashScreen(
     // Single source of truth for navigating away from the splash, used both by the success path
     // and by the dialog's retry handler.
     fun navigateAfterGate() {
-        when {
-            !deepLinkDevId.isNullOrBlank() -> onNavigateTo(Destination.DevProfile(deepLinkDevId))
-            !deepLinkPackageName.isNullOrBlank() -> onNavigateTo(
-                Destination.AppDetails(deepLinkPackageName)
+        when (val destination = pendingDestination) {
+            is Screen.AppDetails -> onNavigateTo(Destination.AppDetails(destination.packageName))
+            is Screen.DevProfile -> onNavigateTo(Destination.DevProfile(destination.developerId))
+            is Screen.PublisherProfile -> onNavigateTo(
+                Destination.PublisherProfile(destination.publisherId)
             )
+            is Screen.Main -> onNavigateTo(Destination.Main(destination.initialTab))
+            null -> when {
+                !deepLinkDevId.isNullOrBlank() -> onNavigateTo(
+                    Destination.DevProfile(deepLinkDevId)
+                )
+                !deepLinkPackageName.isNullOrBlank() -> onNavigateTo(
+                    Destination.AppDetails(deepLinkPackageName)
+                )
+                else -> onNavigateTo(
+                    Destination.Main(
+                        Preferences.getInteger(
+                            context,
+                            Preferences.PREFERENCE_DEFAULT_SELECTED_TAB
+                        )
+                    )
+                )
+            }
             else -> onNavigateTo(
                 Destination.Main(
                     Preferences.getInteger(
@@ -193,12 +214,12 @@ fun SplashScreen(
                     // saved-session auto-restore (preferred over scattering it in every
                     // button handler). When the gate denies entry we hold the splash and
                     // surface the dialog; only Trial/Premium proceed past this point.
-                    when (val plan = planGate.currentPlan()) {
-                        JaecooPlanResult.TRIAL, JaecooPlanResult.PREMIUM -> {
-                            gateBlock = null
-                            navigateAfterGate()
-                        }
-                        else -> gateBlock = GateBlock(
+                    val plan = planGate.currentPlan()
+                    if (plan.allowsJaecooInstall()) {
+                        gateBlock = null
+                        navigateAfterGate()
+                    } else {
+                        gateBlock = GateBlock(
                             plan = plan,
                             fromSavedSession = !userInitiatedAuth
                         )
@@ -394,12 +415,12 @@ fun SplashScreen(
             fromSavedSession = block.fromSavedSession,
             onRetry = {
                 gateDialogScope.launch {
-                    when (val plan = planGate.currentPlan()) {
-                        JaecooPlanResult.TRIAL, JaecooPlanResult.PREMIUM -> {
-                            gateBlock = null
-                            navigateAfterGate()
-                        }
-                        else -> gateBlock = GateBlock(
+                    val plan = planGate.currentPlan()
+                    if (plan.allowsJaecooInstall()) {
+                        gateBlock = null
+                        navigateAfterGate()
+                    } else {
+                        gateBlock = GateBlock(
                             plan = plan,
                             fromSavedSession = block.fromSavedSession
                         )

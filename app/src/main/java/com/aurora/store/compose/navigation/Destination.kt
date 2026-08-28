@@ -20,6 +20,7 @@ sealed class Destination {
 
     data class AppDetails(val packageName: String) : Destination()
     data class DevProfile(val devId: String) : Destination()
+    data class PublisherProfile(val publisherId: String) : Destination()
     data class AppUpdate(val update: Update) : Destination()
 
     data object Search : Destination()

@@ -5,6 +5,7 @@
 
 package com.aurora.store.data.installer.jaecoo
 
+import com.aurora.store.compose.navigation.Screen
 import com.aurora.store.data.installer.JaecooInstaller
 import com.google.common.truth.Truth.assertThat
 import com.jaecoo.installer.bridge.IJaecooInstallerBridge
@@ -52,6 +53,30 @@ class JaecooPlanGateTest {
     @Test
     fun mapWireToResult_givenUnknownWire_returnsError() {
         assertThat(mapWireToResult("not-a-known-state")).isEqualTo(JaecooPlanResult.ERROR)
+    }
+
+    @Test
+    fun freePlan_doesNotAllowJaecooInstall() {
+        assertThat(JaecooPlanResult.FREE.allowsJaecooInstall()).isFalse()
+    }
+
+    @Test
+    fun trialPlan_allowsJaecooInstall() {
+        assertThat(JaecooPlanResult.TRIAL.allowsJaecooInstall()).isTrue()
+    }
+
+    @Test
+    fun premiumPlan_allowsJaecooInstall() {
+        assertThat(JaecooPlanResult.PREMIUM.allowsJaecooInstall()).isTrue()
+    }
+
+    @Test
+    fun directJaecooStart_wrapsRequestedScreenInSplashGate() {
+        val requested = Screen.AppDetails("com.example.app")
+
+        val resolved = com.aurora.store.resolveJaecooStartDestination("jaecoo", requested)
+
+        assertThat(resolved).isEqualTo(Screen.Splash(pendingDestination = requested))
     }
 
     // ---- currentPlan() integration ---------------------------------------

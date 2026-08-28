@@ -39,6 +39,17 @@ enum class JaecooPlanResult {
     ERROR
 }
 
+/** Only trial and premium plans can submit installations through the Jaecoo bridge. */
+fun JaecooPlanResult.allowsJaecooInstall(): Boolean = when (this) {
+    JaecooPlanResult.TRIAL, JaecooPlanResult.PREMIUM -> true
+    JaecooPlanResult.FREE,
+    JaecooPlanResult.LOADING,
+    JaecooPlanResult.IDENTITY_UNAVAILABLE,
+    JaecooPlanResult.JCONFIG_UNAVAILABLE,
+    JaecooPlanResult.JCONFIG_OUTDATED,
+    JaecooPlanResult.ERROR -> false
+}
+
 /**
  * Translates the wire-format string returned by `IJaecooInstallerBridge.getEntitlement()`
  * into the consumer-facing [JaecooPlanResult] used by the splash-screen gate.

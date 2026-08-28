@@ -158,16 +158,27 @@ class ComposeActivity : FragmentActivity() {
     private fun resolveStartDestination(): Screen {
         // Parcel-based navigation (e.g. from NotificationUtil or DeepLinkConfirmActivity, which
         // owns the external ACTION_VIEW market:// and play.google.com deep links)
-        IntentCompat.getParcelableExtra(intent, Screen.PARCEL_KEY, Screen::class.java)
-            ?.let { return it }
+        val requested = IntentCompat.getParcelableExtra(
+            intent,
+            Screen.PARCEL_KEY,
+            Screen::class.java
+        )
+            // SEND / SHOW_APP_INFO — getPackageName() handles both
+            ?: intent.getPackageName()?.let { Screen.AppDetails(it) }
+            ?: return defaultStart()
 
-        // SEND / SHOW_APP_INFO — getPackageName() handles both
-        intent.getPackageName()?.let { return Screen.AppDetails(it) }
-
-        return defaultStart()
+        return resolveJaecooStartDestination(BuildConfig.FLAVOR, requested)
     }
 
     private fun defaultStart(): Screen = Screen.Splash()
 
     private enum class LockState { AUTHENTICATING, LOCKED, UNLOCKED }
 }
+
+/** Route non-default Jaecoo entry points through the entitlement gate before showing the store. */
+internal fun resolveJaecooStartDestination(flavor: String, requested: Screen): Screen =
+    if (flavor == "jaecoo" && requested !is Screen.Splash) {
+        Screen.Splash(pendingDestination = requested)
+    } else {
+        requested
+    }

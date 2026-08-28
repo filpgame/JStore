@@ -183,6 +183,9 @@ fun NavDisplay(startDestination: NavKey) {
 
             is Destination.AppDetails -> backstack.add(Screen.AppDetails(destination.packageName))
             is Destination.DevProfile -> backstack.add(Screen.DevProfile(destination.devId))
+            is Destination.PublisherProfile -> backstack.add(
+                Screen.PublisherProfile(destination.publisherId)
+            )
             is Destination.AppUpdate -> Unit
             is Destination.StreamBrowse -> backstack.add(Screen.StreamBrowse(destination.cluster))
             is Destination.GoogleLogin -> backstack.add(Screen.GoogleLogin(destination.addAccount))
@@ -309,6 +312,7 @@ fun NavDisplay(startDestination: NavKey) {
             entry<Screen.Splash> { screen ->
                 SplashScreen(
                     deepLinkPackageName = screen.packageName,
+                    pendingDestination = screen.pendingDestination,
                     onNavigateTo = ::navigate
                 )
             }

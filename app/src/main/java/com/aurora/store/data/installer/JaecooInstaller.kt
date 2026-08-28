@@ -14,6 +14,8 @@ import android.os.IBinder
 import android.os.RemoteException
 import com.aurora.gplayapi.data.models.PlayFile
 import com.aurora.store.data.installer.base.InstallerBase
+import com.aurora.store.data.installer.jaecoo.JaecooPlanGate
+import com.aurora.store.data.installer.jaecoo.allowsJaecooInstall
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.util.PathUtil
 import com.aurora.store.util.Preferences
@@ -34,12 +36,15 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
+import kotlinx.coroutines.runBlocking
 
 /** Privileged installer client used exclusively by the Jaecoo product flavor. */
 @Singleton
 class JaecooInstaller @Inject constructor(
-    @ApplicationContext context: Context
+    @ApplicationContext context: Context,
+    private val planGate: Provider<JaecooPlanGate>
 ) : InstallerBase(context) {
     private val appContext = context.applicationContext
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
@@ -53,7 +58,9 @@ class JaecooInstaller @Inject constructor(
 
     override fun install(download: Download) {
         super.install(download)
-        executor.execute { submit(download) }
+        executor.execute {
+            if (hasInstallEntitlement(download.packageName)) submit(download)
+        }
     }
 
     override fun cancelInstall(packageName: String) {
@@ -140,6 +147,12 @@ class JaecooInstaller @Inject constructor(
             terminal(attemptId)
             return
         }
+        // Revalidate immediately before crossing the privileged installation boundary. This
+        // closes the race where the plan changes after the early check in install().
+        if (!hasInstallEntitlement(download.packageName)) {
+            terminal(attemptId)
+            return
+        }
         try {
             val operationId = service.submit(request, callbackFor(download.packageName, attemptId))
             if (operationId != attemptId) {
@@ -166,6 +179,19 @@ class JaecooInstaller @Inject constructor(
             // operation id is the persisted attempt id, so recovery can observe it safely.
             postBridgeError(download.packageName, BridgeFailure.SUBMIT, exception)
         }
+    }
+
+    private fun hasInstallEntitlement(packageName: String): Boolean {
+        val plan = runCatching {
+            runBlocking { planGate.get().currentPlan() }
+        }.getOrElse {
+            postBridgeError(packageName, BridgeFailure.PLAN, it)
+            return false
+        }
+        if (plan.allowsJaecooInstall()) return true
+
+        postError(packageName, BridgeFailure.PLAN_REQUIRED.message, plan.name)
+        return false
     }
 
     private fun recoverPending() {
@@ -381,6 +407,8 @@ class JaecooInstaller @Inject constructor(
         DEVICE_OWNER("Jaecoo installer lost Device Owner state"),
         SECURITY("Jaecoo bridge signature permission rejected the caller"),
         PREPARE("Failed to prepare Jaecoo install artifacts"),
+        PLAN("Failed to verify JStore plan"),
+        PLAN_REQUIRED("JStore plan does not allow app installation"),
         SUBMIT("Jaecoo bridge submit failed"),
         CANCEL("Jaecoo bridge cancellation failed"),
         PACKAGE_INSTALLER("Jaecoo PackageInstaller operation failed")
