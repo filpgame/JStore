@@ -260,9 +260,18 @@ private fun CatalogActionArea(
         download?.isActive == true -> {
             DownloadingState(modifier = modifier, download = download, onCancel = onCancel)
         }
-        !packageState.hasValidSigner -> OutlinedButton(modifier = modifier, onClick = {
-        }, enabled = false) {
-            Text(stringResource(R.string.store_catalog_incompatible_signature))
+        !packageState.hasValidSigner -> Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(
+                dimensionResource(R.dimen.spacing_xsmall)
+            )
+        ) {
+            OutlinedButton(onClick = {}, enabled = false) {
+                Text(stringResource(R.string.store_catalog_incompatible_signature))
+            }
+            OutlinedButton(onClick = onUninstall) {
+                Text(stringResource(R.string.action_uninstall))
+            }
         }
         download?.status == DownloadStatus.FAILED && matchesCurrentArtifact ->
             OutlinedButton(modifier = modifier, onClick = onRetry) {
