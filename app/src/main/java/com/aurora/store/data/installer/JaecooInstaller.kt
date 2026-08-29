@@ -40,6 +40,17 @@ import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.runBlocking
 
+/** Outcome of a one-shot attempt to connect to the Jconfig installer bridge. */
+sealed interface JaecooBridgeConnection {
+    data class Connected(val bridge: IJaecooInstallerBridge) : JaecooBridgeConnection
+
+    data object BindRejected : JaecooBridgeConnection
+
+    data object BindTimedOut : JaecooBridgeConnection
+
+    data class BindFailed(val exception: Exception) : JaecooBridgeConnection
+}
+
 /** Privileged installer client used exclusively by the Jaecoo product flavor. */
 @Singleton
 class JaecooInstaller @Inject constructor(
@@ -51,6 +62,8 @@ class JaecooInstaller @Inject constructor(
     private val ledger = JaecooInstallLedger(appContext)
 
     @Volatile private var bridge: IJaecooInstallerBridge? = null
+
+    @Volatile private var bridgeConnection: ServiceConnection? = null
 
     init {
         executor.execute(::recoverPending)
@@ -253,13 +266,31 @@ class JaecooInstaller @Inject constructor(
      */
     internal fun currentBridge(): IJaecooInstallerBridge? = connect()
 
-    private fun connect(): IJaecooInstallerBridge? {
-        bridge?.let { return it }
+    /** Returns the bind outcome so the splash gate can report actionable diagnostics. */
+    internal fun currentBridgeConnection(): JaecooBridgeConnection = connectDetailed()
+
+    /** Discards a failed bridge and connection before the splash gate retries the bind. */
+    @Synchronized
+    internal fun clearCachedBridge() {
+        bridge = null
+        bridgeConnection?.let(::unbind)
+    }
+
+    private fun connect(): IJaecooInstallerBridge? = when (val connection = connectDetailed()) {
+        is JaecooBridgeConnection.Connected -> connection.bridge
+        is JaecooBridgeConnection.BindFailed -> throw connection.exception
+        JaecooBridgeConnection.BindRejected,
+        JaecooBridgeConnection.BindTimedOut -> null
+    }
+
+    @Synchronized
+    private fun connectDetailed(): JaecooBridgeConnection {
+        bridge?.let { return JaecooBridgeConnection.Connected(it) }
         val latch = CountDownLatch(1)
         val timedOut = AtomicBoolean(false)
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-                if (timedOut.get()) {
+                if (timedOut.get() || bridgeConnection !== this) {
                     runCatching { appContext.unbindService(this) }
                     return
                 }
@@ -268,11 +299,32 @@ class JaecooInstaller @Inject constructor(
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
-                bridge = null
+                if (bridgeConnection === this) {
+                    bridge = null
+                    bridgeConnection = null
+                }
+            }
+
+            override fun onBindingDied(name: ComponentName) {
+                if (bridgeConnection === this) {
+                    bridge = null
+                    bridgeConnection = null
+                    runCatching { appContext.unbindService(this) }
+                }
             }
         }
         val intent = Intent(BRIDGE_ACTION).setPackage(BRIDGE_PACKAGE)
-        if (!appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)) return null
+        bridgeConnection = connection
+        val bound = try {
+            appContext.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        } catch (exception: Exception) {
+            if (bridgeConnection === connection) bridgeConnection = null
+            return JaecooBridgeConnection.BindFailed(exception)
+        }
+        if (!bound) {
+            if (bridgeConnection === connection) bridgeConnection = null
+            return JaecooBridgeConnection.BindRejected
+        }
         val connected = try {
             latch.await(BIND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         } catch (exception: InterruptedException) {
@@ -281,11 +333,24 @@ class JaecooInstaller @Inject constructor(
         }
         if (!connected) {
             timedOut.set(true)
-            bridge = null
+            if (bridgeConnection === connection) {
+                bridge = null
+                bridgeConnection = null
+            }
             runCatching { appContext.unbindService(connection) }
-            return null
+            return JaecooBridgeConnection.BindTimedOut
         }
         return bridge
+            ?.takeIf { bridgeConnection === connection }
+            ?.let(JaecooBridgeConnection::Connected)
+            ?: JaecooBridgeConnection.BindFailed(
+                IllegalStateException("Jconfig returned no installer bridge")
+            )
+    }
+
+    private fun unbind(connection: ServiceConnection) {
+        if (bridgeConnection === connection) bridgeConnection = null
+        runCatching { appContext.unbindService(connection) }
     }
 
     private fun request(download: Download, attemptId: String): InstallRequest {

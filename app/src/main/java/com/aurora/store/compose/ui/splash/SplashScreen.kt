@@ -63,8 +63,8 @@ import com.aurora.store.R
 import com.aurora.store.compose.composition.LocalNetworkStatus
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.navigation.Screen
+import com.aurora.store.data.installer.jaecoo.JaecooPlanDetails
 import com.aurora.store.data.installer.jaecoo.JaecooPlanGate
-import com.aurora.store.data.installer.jaecoo.JaecooPlanResult
 import com.aurora.store.data.installer.jaecoo.allowsJaecooInstall
 import com.aurora.store.data.model.AuthState
 import com.aurora.store.data.model.NetworkStatus
@@ -96,7 +96,10 @@ internal interface SplashEntryPoint {
  * Snapshot of a denied Jconfig plan-gate result, paired with the source (fresh login vs.
  * saved-session auto-restore) so the dialog can pick the right body text.
  */
-internal data class GateBlock(val plan: JaecooPlanResult, val fromSavedSession: Boolean)
+internal data class GateBlock(
+    val details: JaecooPlanDetails,
+    val fromSavedSession: Boolean
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -214,13 +217,13 @@ fun SplashScreen(
                     // saved-session auto-restore (preferred over scattering it in every
                     // button handler). When the gate denies entry we hold the splash and
                     // surface the dialog; only Trial/Premium proceed past this point.
-                    val plan = planGate.currentPlan()
-                    if (plan.allowsJaecooInstall()) {
+                    val details = planGate.currentPlanDetails()
+                    if (details.plan.allowsJaecooInstall()) {
                         gateBlock = null
                         navigateAfterGate()
                     } else {
                         gateBlock = GateBlock(
-                            plan = plan,
+                            details = details,
                             fromSavedSession = !userInitiatedAuth
                         )
                     }
@@ -411,17 +414,17 @@ fun SplashScreen(
 
     gateBlock?.let { block ->
         JaecooPlanBlockedDialog(
-            result = block.plan,
+            details = block.details,
             fromSavedSession = block.fromSavedSession,
             onRetry = {
                 gateDialogScope.launch {
-                    val plan = planGate.currentPlan()
-                    if (plan.allowsJaecooInstall()) {
+                    val details = planGate.currentPlanDetails()
+                    if (details.plan.allowsJaecooInstall()) {
                         gateBlock = null
                         navigateAfterGate()
                     } else {
                         gateBlock = GateBlock(
-                            plan = plan,
+                            details = details,
                             fromSavedSession = block.fromSavedSession
                         )
                     }

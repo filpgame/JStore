@@ -5,11 +5,16 @@
 
 package com.aurora.store.data.installer.jaecoo
 
+import android.os.BadParcelableException
+import android.os.DeadObjectException
+import android.os.RemoteException
+import com.aurora.store.data.installer.JaecooBridgeConnection
 import com.aurora.store.data.installer.JaecooInstaller
 import com.jaecoo.installer.bridge.IJaecooInstallerBridge
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /** Possible outcomes of a Jconfig plan-gate check. */
@@ -38,6 +43,55 @@ enum class JaecooPlanResult {
     /** Bridge call failed with an unknown error or returned an unrecognised wire value. */
     ERROR
 }
+
+/** Stable, privacy-safe code shown to users when the Jconfig bridge denies the splash gate. */
+enum class JaecooPlanDiagnostic {
+    NONE,
+    PLAN_FREE,
+    BIND_REJECTED,
+    BIND_TIMEOUT,
+    BIND_SECURITY_EXCEPTION,
+    BIND_DEAD_OBJECT,
+    BIND_REMOTE_EXCEPTION,
+    BIND_PARCEL_EXCEPTION,
+    BIND_EXCEPTION,
+    CAPABILITIES_SECURITY_EXCEPTION,
+    CAPABILITIES_DEAD_OBJECT,
+    CAPABILITIES_REMOTE_EXCEPTION,
+    CAPABILITIES_PARCEL_EXCEPTION,
+    CAPABILITIES_EXCEPTION,
+    SERVICE_VERSION_UNSUPPORTED,
+    ENTITLEMENT_LOADING,
+    IDENTITY_UNAVAILABLE,
+    ENTITLEMENT_SECURITY_EXCEPTION,
+    ENTITLEMENT_DEAD_OBJECT,
+    ENTITLEMENT_REMOTE_EXCEPTION,
+    ENTITLEMENT_PARCEL_EXCEPTION,
+    ENTITLEMENT_NULL,
+    ENTITLEMENT_UNKNOWN_VALUE,
+    ENTITLEMENT_EXCEPTION;
+
+    internal val retryable: Boolean
+        get() = when (this) {
+            BIND_REJECTED,
+            BIND_TIMEOUT,
+            BIND_DEAD_OBJECT,
+            BIND_REMOTE_EXCEPTION,
+            CAPABILITIES_DEAD_OBJECT,
+            CAPABILITIES_REMOTE_EXCEPTION,
+            ENTITLEMENT_DEAD_OBJECT,
+            ENTITLEMENT_REMOTE_EXCEPTION -> true
+            else -> false
+        }
+}
+
+/** Result returned to the splash so it can render a support-friendly diagnostic. */
+data class JaecooPlanDetails(
+    val plan: JaecooPlanResult,
+    val diagnostic: JaecooPlanDiagnostic = JaecooPlanDiagnostic.NONE,
+    val exceptionSummary: String? = null,
+    val attempts: Int = 1
+)
 
 /** Only trial and premium plans can submit installations through the Jaecoo bridge. */
 fun JaecooPlanResult.allowsJaecooInstall(): Boolean = when (this) {
@@ -75,20 +129,142 @@ fun mapWireToResult(wire: String?): JaecooPlanResult = when (wire) {
  */
 @Singleton
 class JaecooPlanGate(
-    private val bridgeSource: () -> IJaecooInstallerBridge?
+    private val bridgeSource: () -> JaecooBridgeConnection,
+    private val clearCachedBridge: () -> Unit = {},
+    private val retryDelayMillis: Long = RETRY_DELAY_MILLIS
 ) {
-    @Inject constructor(installer: JaecooInstaller) : this(installer::currentBridge)
+    @Inject constructor(installer: JaecooInstaller) : this(
+        bridgeSource = installer::currentBridgeConnection,
+        clearCachedBridge = installer::clearCachedBridge
+    )
 
     /** Acquire the current plan over IPC. Always returns; never throws. */
     suspend fun currentPlan(): JaecooPlanResult = withContext(Dispatchers.IO) {
-        val bridge = bridgeSource()
-            ?: return@withContext JaecooPlanResult.JCONFIG_UNAVAILABLE
-        val supportsEntitlement = runCatching {
-            bridge.capabilities.serviceVersion >=
-                JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT
-        }.getOrDefault(false)
-        if (!supportsEntitlement) return@withContext JaecooPlanResult.JCONFIG_OUTDATED
-        val wire = runCatching { bridge.entitlement }.getOrNull()
-        mapWireToResult(wire)
+        currentPlanAttempt().plan
+    }
+
+    /**
+     * Acquires the plan and preserves the failed IPC boundary for the splash dialog.
+     * One transient bridge failure is retried after a short delay so an app-start race does not
+     * block a valid subscriber.
+     */
+    suspend fun currentPlanDetails(): JaecooPlanDetails = withContext(Dispatchers.IO) {
+        val first = currentPlanAttempt()
+        if (!first.diagnostic.retryable) return@withContext first
+
+        clearCachedBridge()
+        delay(retryDelayMillis)
+        currentPlanAttempt().copy(attempts = 2)
+    }
+
+    private fun currentPlanAttempt(): JaecooPlanDetails = when (val connection = bridgeSource()) {
+        is JaecooBridgeConnection.Connected -> queryEntitlement(connection.bridge)
+        JaecooBridgeConnection.BindRejected -> unavailable(JaecooPlanDiagnostic.BIND_REJECTED)
+        JaecooBridgeConnection.BindTimedOut -> unavailable(JaecooPlanDiagnostic.BIND_TIMEOUT)
+        is JaecooBridgeConnection.BindFailed -> unavailable(
+            diagnosticFor(Stage.BIND, connection.exception),
+            connection.exception
+        )
+    }
+
+    private fun queryEntitlement(bridge: IJaecooInstallerBridge): JaecooPlanDetails {
+        val capabilities = try {
+            bridge.capabilities
+        } catch (exception: Exception) {
+            return JaecooPlanDetails(
+                plan = JaecooPlanResult.JCONFIG_OUTDATED,
+                diagnostic = diagnosticFor(Stage.CAPABILITIES, exception),
+                exceptionSummary = exception.summary()
+            )
+        }
+        if (capabilities.serviceVersion < JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT) {
+            return JaecooPlanDetails(
+                plan = JaecooPlanResult.JCONFIG_OUTDATED,
+                diagnostic = JaecooPlanDiagnostic.SERVICE_VERSION_UNSUPPORTED
+            )
+        }
+
+        val wire = try {
+            bridge.entitlement
+        } catch (exception: Exception) {
+            return unavailable(diagnosticFor(Stage.ENTITLEMENT, exception), exception)
+        }
+        return when (val plan = mapWireToResult(wire)) {
+            JaecooPlanResult.ERROR -> JaecooPlanDetails(
+                plan = plan,
+                diagnostic = JaecooPlanDiagnostic.ENTITLEMENT_UNKNOWN_VALUE
+            )
+            JaecooPlanResult.IDENTITY_UNAVAILABLE -> JaecooPlanDetails(
+                plan = plan,
+                diagnostic = JaecooPlanDiagnostic.IDENTITY_UNAVAILABLE
+            )
+            JaecooPlanResult.LOADING -> JaecooPlanDetails(
+                plan = plan,
+                diagnostic = JaecooPlanDiagnostic.ENTITLEMENT_LOADING
+            )
+            JaecooPlanResult.JCONFIG_UNAVAILABLE -> unavailable(
+                JaecooPlanDiagnostic.ENTITLEMENT_NULL
+            )
+            JaecooPlanResult.FREE -> JaecooPlanDetails(
+                plan = plan,
+                diagnostic = JaecooPlanDiagnostic.PLAN_FREE
+            )
+            else -> JaecooPlanDetails(plan = plan)
+        }
+    }
+
+    private fun unavailable(
+        diagnostic: JaecooPlanDiagnostic,
+        exception: Exception? = null
+    ): JaecooPlanDetails = JaecooPlanDetails(
+        plan = JaecooPlanResult.JCONFIG_UNAVAILABLE,
+        diagnostic = diagnostic,
+        exceptionSummary = exception?.summary()
+    )
+
+    private fun diagnosticFor(stage: Stage, exception: Exception): JaecooPlanDiagnostic =
+        when (stage) {
+            Stage.BIND -> when (exception) {
+                is SecurityException -> JaecooPlanDiagnostic.BIND_SECURITY_EXCEPTION
+                is DeadObjectException -> JaecooPlanDiagnostic.BIND_DEAD_OBJECT
+                is RemoteException -> JaecooPlanDiagnostic.BIND_REMOTE_EXCEPTION
+                is BadParcelableException -> JaecooPlanDiagnostic.BIND_PARCEL_EXCEPTION
+                else -> JaecooPlanDiagnostic.BIND_EXCEPTION
+            }
+            Stage.CAPABILITIES -> when (exception) {
+                is SecurityException -> JaecooPlanDiagnostic.CAPABILITIES_SECURITY_EXCEPTION
+                is DeadObjectException -> JaecooPlanDiagnostic.CAPABILITIES_DEAD_OBJECT
+                is RemoteException -> JaecooPlanDiagnostic.CAPABILITIES_REMOTE_EXCEPTION
+                is BadParcelableException -> JaecooPlanDiagnostic.CAPABILITIES_PARCEL_EXCEPTION
+                else -> JaecooPlanDiagnostic.CAPABILITIES_EXCEPTION
+            }
+            Stage.ENTITLEMENT -> when (exception) {
+                is SecurityException -> JaecooPlanDiagnostic.ENTITLEMENT_SECURITY_EXCEPTION
+                is DeadObjectException -> JaecooPlanDiagnostic.ENTITLEMENT_DEAD_OBJECT
+                is RemoteException -> JaecooPlanDiagnostic.ENTITLEMENT_REMOTE_EXCEPTION
+                is BadParcelableException -> JaecooPlanDiagnostic.ENTITLEMENT_PARCEL_EXCEPTION
+                else -> JaecooPlanDiagnostic.ENTITLEMENT_EXCEPTION
+            }
+        }
+
+    private fun Exception.summary(): String {
+        val type = javaClass.simpleName.ifBlank { "Exception" }
+        val message = message
+            ?.replace(Regex("\\s+"), " ")
+            ?.trim()
+            ?.take(MAX_EXCEPTION_MESSAGE_LENGTH)
+            ?.takeIf(String::isNotEmpty)
+        return listOfNotNull(type, message).joinToString(": ")
+    }
+
+    private enum class Stage {
+        BIND,
+        CAPABILITIES,
+        ENTITLEMENT
+    }
+
+    private companion object {
+        const val RETRY_DELAY_MILLIS = 250L
+        const val MAX_EXCEPTION_MESSAGE_LENGTH = 240
     }
 }
