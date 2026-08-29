@@ -17,9 +17,10 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +39,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -98,7 +101,7 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun StoreCatalogContent(
+internal fun StoreCatalogContent(
     entries: List<StoreCatalogEntry>,
     downloads: Map<String, Download>,
     isLoading: Boolean,
@@ -135,7 +138,19 @@ private fun StoreCatalogContent(
                     dimensionResource(R.dimen.spacing_small)
                 )
             ) {
-                items(entries, key = StoreCatalogEntry::originalPackageId) { entry ->
+                itemsIndexed(
+                    entries,
+                    key = { _, entry -> entry.originalPackageId }
+                ) { index, entry ->
+                    if (index > 0) {
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = dimensionResource(R.dimen.spacing_medium)
+                                )
+                                .semantics { testTag = "store_catalog_divider" }
+                        )
+                    }
                     StoreCatalogItem(
                         entry = entry,
                         download = downloads[entry.customPackageId],
