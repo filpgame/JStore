@@ -6,9 +6,17 @@
 package com.aurora.store.compose.ui.apps
 
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
+import com.aurora.store.BuildConfig
 import com.aurora.store.IsolatedTest
+import com.aurora.store.R
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
+import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class StoreCatalogPageTest : IsolatedTest() {
@@ -52,6 +60,40 @@ class StoreCatalogPageTest : IsolatedTest() {
 
         composeTestRule.onAllNodesWithTag("store_catalog_divider")
             .assertCountEquals(0)
+    }
+
+    @Test
+    fun offersUninstallActionForIncompatibleSignature() {
+        var uninstallRequests = 0
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+
+        setContent {
+            StoreCatalogContent(
+                entries = listOf(
+                    entry("incompatible").copy(
+                        customPackageId = BuildConfig.APPLICATION_ID
+                    )
+                ),
+                downloads = emptyMap(),
+                isLoading = false,
+                hasError = false,
+                installationRevision = 0,
+                onInstall = {},
+                onCancel = {},
+                onRetry = {},
+                onUninstall = { uninstallRequests++ },
+                onRefresh = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText(
+            context.getString(R.string.store_catalog_incompatible_signature)
+        ).assertIsDisplayed()
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText(context.getString(R.string.action_uninstall))
+            .performClick()
+
+        assertThat(uninstallRequests).isEqualTo(1)
     }
 
     private fun entry(suffix: String) = StoreCatalogEntry(
