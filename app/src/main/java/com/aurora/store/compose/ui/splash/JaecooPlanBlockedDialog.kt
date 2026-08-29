@@ -6,7 +6,9 @@
 package com.aurora.store.compose.ui.splash
 
 import android.util.Log
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -15,6 +17,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.aurora.store.R
+import com.aurora.store.data.installer.jaecoo.JaecooPlanDetails
+import com.aurora.store.data.installer.jaecoo.JaecooPlanDiagnostic
 import com.aurora.store.data.installer.jaecoo.JaecooPlanResult
 
 private const val JCONFIG_PACKAGE = "com.frodrigues.jconfig"
@@ -29,12 +33,13 @@ private const val TAG = "JaecooPlanBlockedDialog"
  */
 @Composable
 fun JaecooPlanBlockedDialog(
-    result: JaecooPlanResult,
+    details: JaecooPlanDetails,
     fromSavedSession: Boolean,
     onRetry: () -> Unit,
     onOpenJconfig: () -> Unit
 ) {
     val context = LocalContext.current
+    val result = details.plan
     val message = when (result) {
         JaecooPlanResult.FREE -> if (fromSavedSession) {
             stringResource(R.string.jconfig_gate_message_session)
@@ -65,7 +70,36 @@ fun JaecooPlanBlockedDialog(
             dismissOnClickOutside = false
         ),
         title = { Text(stringResource(R.string.jconfig_gate_title)) },
-        text = { Text(message) },
+        text = {
+            Column {
+                Text(message)
+                if (details.diagnostic != JaecooPlanDiagnostic.NONE) {
+                    Text(
+                        text = stringResource(
+                            R.string.jconfig_gate_diagnostic_code,
+                            details.diagnostic.name
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.jconfig_gate_diagnostic_attempts,
+                            details.attempts
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                details.exceptionSummary?.let { exceptionSummary ->
+                    Text(
+                        text = stringResource(
+                            R.string.jconfig_gate_diagnostic_exception,
+                            exceptionSummary
+                        ),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
         confirmButton = {
             TextButton(onClick = onRetry) {
                 Text(stringResource(R.string.jconfig_gate_retry))

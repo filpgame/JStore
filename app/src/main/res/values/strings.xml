@@ -56,6 +56,9 @@
     <string name="jconfig_gate_message_unavailable">Serviço Jconfig indisponível no momento. Tente novamente.</string>
     <string name="jconfig_gate_message_loading">O Jconfig ainda está verificando sua assinatura. Aguarde alguns instantes e tente novamente.</string>
     <string name="jconfig_gate_message_outdated">Versão do Jconfig instalada não é compatível. Atualize o Jconfig para abrir a loja.</string>
+    <string name="jconfig_gate_diagnostic_code">Código técnico: %1$s</string>
+    <string name="jconfig_gate_diagnostic_attempts">Tentativas de conexão: %1$d</string>
+    <string name="jconfig_gate_diagnostic_exception">Detalhe técnico: %1$s</string>
     <string name="jconfig_gate_open_jconfig">Abrir Jconfig</string>
     <string name="jconfig_gate_retry">Tentar novamente</string>
     <string name="account_login_using">Log in using</string>
