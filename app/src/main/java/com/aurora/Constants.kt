@@ -42,6 +42,8 @@ object Constants {
         "https://auroraoss.com/downloads/AuroraStore/Feeds/release_feed.json"
     const val UPDATE_URL_NIGHTLY =
         "https://auroraoss.com/downloads/AuroraStore/Feeds/nightly_feed.json"
+    const val UPDATE_URL_JSTORE = "https://jconfig.app/v1/versioncheck?app=jstore"
+    const val JSTORE_ICON_URL = "https://jconfig.app/brand-icon.png"
 
     // Channel IDs carry a version suffix where the importance changed from a previous
     // release: Android ignores importance edits on an already-created channel, so a new ID
@@ -87,4 +89,5 @@ object Constants {
     const val FLAVOUR_VANILLA = "vanilla"
     const val FLAVOUR_HUAWEI = "huawei"
     const val FLAVOUR_PRELOAD = "preload"
+    const val FLAVOUR_JAECOO = "jaecoo"
 }

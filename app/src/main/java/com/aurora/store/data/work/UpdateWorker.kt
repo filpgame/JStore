@@ -8,7 +8,6 @@ import androidx.core.content.getSystemService
 import androidx.hilt.work.HiltWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import com.aurora.Constants
 import com.aurora.extensions.TAG
 import com.aurora.extensions.isGrapheneOS
 import com.aurora.extensions.isHyperOS
@@ -22,8 +21,11 @@ import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.helper.UpdateHelper
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.model.BuildType
+import com.aurora.store.data.model.JConfigRelease
 import com.aurora.store.data.model.SelfUpdate
+import com.aurora.store.data.model.SelfUpdateSource
 import com.aurora.store.data.model.UpdateMode
+import com.aurora.store.data.model.resolveSelfUpdateSource
 import com.aurora.store.data.network.HttpClient
 import com.aurora.store.data.providers.AccountProvider
 import com.aurora.store.data.providers.AuthProvider
@@ -255,6 +257,7 @@ class UpdateWorker @AssistedInject constructor(
             val catalogUpdates = catalogEntries
                 .filter {
                     it.customPackageId in eligiblePackageNames &&
+                        (selfUpdate == null || it.customPackageId != context.packageName) &&
                         PackageUtil.isUpdatable(context, it.customPackageId, it.versionCode)
                 }
                 .map { entry ->
@@ -272,24 +275,30 @@ class UpdateWorker @AssistedInject constructor(
     }
 
     /**
-     * Fetches Aurora Store's own update from the bundled release/nightly feed and maps
-     * it onto an [App] so it joins the regular update list. Nightly version codes never
-     * bump, so newness is decided by the build timestamp there; release uses the version
-     * code. Best-effort: any failure logs and yields no update.
+     * Fetches the configured self-update source and maps it onto an [App] so it joins the
+     * regular update list. Nightly version codes never bump, so newness is decided by the
+     * build timestamp there; release uses the version code. Best-effort: any failure logs
+     * and yields no update, allowing the J7 catalog entry to remain a fallback.
      */
     private suspend fun getSelfUpdate(): App? = withContext(Dispatchers.IO) {
-        val updateUrl = when (BuildType.CURRENT) {
-            BuildType.RELEASE -> Constants.UPDATE_URL_VANILLA
-            BuildType.NIGHTLY -> Constants.UPDATE_URL_NIGHTLY
-            else -> {
-                Log.i(TAG, "Self-updates are not available for this build!")
-                return@withContext null
-            }
-        }
+        val source = resolveSelfUpdateSource(BuildConfig.FLAVOR, BuildType.CURRENT)
+            ?: return@withContext null
 
         try {
-            val selfUpdate = httpClient.call(updateUrl).use {
-                json.decodeFromString<SelfUpdate>(it.body.string())
+            val selfUpdate = httpClient.call(source.url).use {
+                when (source) {
+                    SelfUpdateSource.JCONFIG_RELEASE ->
+                        json.decodeFromString<JConfigRelease>(it.body.string()).toSelfUpdateOrNull()
+                    SelfUpdateSource.AURORA_RELEASE,
+                    SelfUpdateSource.AURORA_NIGHTLY ->
+                        json.decodeFromString<SelfUpdate>(
+                            it.body.string()
+                        )
+                }
+            }
+            if (selfUpdate == null) {
+                Log.w(TAG, "Self-update feed returned an invalid JConfig release")
+                return@withContext null
             }
 
             val isNewer = when (BuildType.CURRENT) {
