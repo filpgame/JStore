@@ -15,17 +15,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import com.aurora.extensions.browse
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.ExodusTracker
 
@@ -41,11 +42,12 @@ fun ExodusListItem(modifier: Modifier = Modifier, tracker: ExodusTracker) {
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(
                 onClick = { context.browse(tracker.url) },
                 enabled = tracker.url.isNotBlank()
             )
-            .padding(dimensionResource(R.dimen.spacing_small))
+            .padding(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         Text(
             text = tracker.name,
@@ -57,9 +59,9 @@ fun ExodusListItem(modifier: Modifier = Modifier, tracker: ExodusTracker) {
         )
         if (tracker.categories.isNotEmpty()) {
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(vertical = 4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.scaledDp),
+                verticalArrangement = Arrangement.spacedBy(4.scaledDp),
+                modifier = Modifier.padding(vertical = 4.scaledDp)
             ) {
                 tracker.categories.forEach { category -> CategoryChip(category) }
             }
@@ -85,8 +87,8 @@ private fun CategoryChip(category: String) {
             text = category,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(
-                horizontal = dimensionResource(R.dimen.spacing_small),
-                vertical = 2.dp
+                horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                vertical = 2.scaledDp
             )
         )
     }

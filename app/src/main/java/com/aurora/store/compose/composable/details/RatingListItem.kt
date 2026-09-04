@@ -16,11 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -34,9 +34,9 @@ fun RatingListItem(modifier: Modifier = Modifier, label: String, rating: Float) 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.spacing_small)),
+            .padding(horizontal = scaledDimensionResource(R.dimen.spacing_small)),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         Text(
             text = label,
@@ -46,7 +46,7 @@ fun RatingListItem(modifier: Modifier = Modifier, label: String, rating: Float) 
         LinearProgressIndicator(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(dimensionResource(R.dimen.radius_small)),
+                .height(scaledDimensionResource(R.dimen.radius_small)),
             progress = { rating }
         )
     }

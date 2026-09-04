@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,7 +36,9 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.util.fastForEach
 import com.aurora.extensions.browse
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.app.AnimatedAppIcon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.ExternalItem
 import com.aurora.store.data.model.InstallStatus
@@ -91,13 +91,15 @@ fun MicroG(
         modifier = modifier
             .fillMaxSize()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_small),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_xsmall))
+            verticalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_xsmall)
+            )
         ) {
             Text(
                 text = stringResource(R.string.onboarding_gms_microg),
@@ -116,8 +118,10 @@ fun MicroG(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = dimensionResource(R.dimen.spacing_large)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+                .padding(vertical = scaledDimensionResource(R.dimen.spacing_large)),
+            verticalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            )
         ) {
             uiState.items.fastForEach { item ->
                 MicroGItemRow(item = item)
@@ -127,7 +131,7 @@ fun MicroG(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_small)
+                        scaledDimensionResource(R.dimen.spacing_small)
                     )
                 ) {
                     Checkbox(
@@ -218,13 +222,13 @@ private fun MicroGItemRow(item: ExternalItem) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_small),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AnimatedAppIcon(
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium)),
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium)),
             iconUrl = item.iconURL,
             inProgress = inProgress,
             progress = item.progress.toFloat()
@@ -232,7 +236,7 @@ private fun MicroGItemRow(item: ExternalItem) {
         Column(
             modifier = Modifier
                 .weight(1F)
-                .padding(horizontal = dimensionResource(R.dimen.spacing_small))
+                .padding(horizontal = scaledDimensionResource(R.dimen.spacing_small))
         ) {
             Text(
                 text = item.displayName,
@@ -255,7 +259,7 @@ private fun MicroGItemRow(item: ExternalItem) {
                 painter = painterResource(trailingIcon),
                 contentDescription = statusText,
                 tint = statusColor,
-                modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_default))
+                modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_default))
             )
         }
     }

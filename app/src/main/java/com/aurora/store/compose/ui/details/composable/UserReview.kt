@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +42,7 @@ import coil3.request.crossfade
 import com.aurora.gplayapi.data.models.Review
 import com.aurora.store.R
 import com.aurora.store.compose.composable.SectionHeader
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -113,11 +113,13 @@ private fun ReviewSummary(review: Review, onEdit: () -> Unit, onDelete: () -> Un
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+            horizontalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
@@ -128,8 +130,8 @@ private fun ReviewSummary(review: Review, onEdit: () -> Unit, onDelete: () -> Un
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .requiredSize(dimensionResource(R.dimen.icon_size_small))
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                    .requiredSize(scaledDimensionResource(R.dimen.icon_size_small))
+                    .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
             )
             Column {
                 Text(
@@ -140,7 +142,7 @@ private fun ReviewSummary(review: Review, onEdit: () -> Unit, onDelete: () -> Un
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_xsmall)
+                        scaledDimensionResource(R.dimen.spacing_xsmall)
                     ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -183,7 +185,9 @@ private fun ReviewSummary(review: Review, onEdit: () -> Unit, onDelete: () -> Un
 
         Row(
             modifier = Modifier.align(Alignment.End),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            horizontalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            )
         ) {
             TextButton(onClick = { showDeleteDialog = true }) {
                 Text(text = stringResource(R.string.details_review_delete))
@@ -214,8 +218,8 @@ private fun ReviewForm(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         AndroidView(
             factory = { context ->
@@ -236,7 +240,7 @@ private fun ReviewForm(
             onValueChange = { title = it },
             placeholder = { Text(text = stringResource(R.string.details_ratings_title_hint)) },
             singleLine = true,
-            shape = RoundedCornerShape(dimensionResource(R.dimen.radius_medium))
+            shape = RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium))
         )
 
         OutlinedTextField(
@@ -245,7 +249,7 @@ private fun ReviewForm(
             onValueChange = { comment = it },
             placeholder = { Text(text = stringResource(R.string.details_review_comment_hint)) },
             minLines = 3,
-            shape = RoundedCornerShape(dimensionResource(R.dimen.radius_medium))
+            shape = RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium))
         )
 
         Button(
@@ -263,7 +267,7 @@ private fun ReviewForm(
 @Composable
 private fun UserReviewFormPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         UserReview()
     }
@@ -274,7 +278,7 @@ private fun UserReviewFormPreview() {
 @Composable
 private fun UserReviewSummaryPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         UserReview(
             review = Review(

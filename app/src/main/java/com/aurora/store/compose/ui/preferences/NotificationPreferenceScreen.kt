@@ -16,6 +16,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,7 +84,9 @@ private fun ScreenContent() {
             if (!notificationsEnabled) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable { openAppNotificationSettings(context) },
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                            openAppNotificationSettings(context)
+                        },
                         headlineContent = {
                             Text(stringResource(R.string.pref_notification_disabled))
                         },
@@ -97,7 +100,7 @@ private fun ScreenContent() {
 
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         showProgress = !showProgress
                         context.save(PREFERENCE_NOTIFICATION_PROGRESS, showProgress)
                     },
@@ -136,7 +139,7 @@ private fun ScreenContent() {
                 channels.forEach { (channelId, nameRes) ->
                     item {
                         ListItem(
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.minimumInteractiveComponentSize().clickable {
                                 openChannelSettings(context, channelId)
                             },
                             headlineContent = { Text(stringResource(nameRes)) }

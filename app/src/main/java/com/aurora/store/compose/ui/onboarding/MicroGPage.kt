@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +27,7 @@ import com.aurora.extensions.toast
 import com.aurora.store.R
 import com.aurora.store.compose.composable.MicroG
 import com.aurora.store.compose.composable.ScrollHint
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.PermissionType
 import com.aurora.store.data.providers.PermissionProvider
@@ -61,12 +61,12 @@ private fun ScreenContent(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
+                .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
             state = listState
         ) {
             item {
                 Column(
-                    modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))
+                    modifier = Modifier.padding(scaledDimensionResource(R.dimen.spacing_medium))
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_title_gsf),

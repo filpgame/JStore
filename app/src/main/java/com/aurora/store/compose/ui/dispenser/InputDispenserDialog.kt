@@ -25,12 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import kotlinx.coroutines.android.awaitFrame
 
 /**
@@ -54,7 +54,7 @@ fun InputDispenserDialog(onAdd: (url: String) -> Unit = {}, onDismiss: () -> Uni
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_medium)
+                    scaledDimensionResource(R.dimen.spacing_medium)
                 )
             ) {
                 Text(text = stringResource(R.string.add_dispenser_summary))
@@ -65,7 +65,7 @@ fun InputDispenserDialog(onAdd: (url: String) -> Unit = {}, onDismiss: () -> Uni
                     value = url,
                     placeholder = { Text(text = stringResource(R.string.add_dispenser_hint)) },
                     onValueChange = { url = it },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(10.scaledDp),
                     singleLine = true,
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                 )

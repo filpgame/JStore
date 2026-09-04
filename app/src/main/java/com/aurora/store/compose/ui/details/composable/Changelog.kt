@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
@@ -28,6 +27,7 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
 import com.aurora.store.compose.composable.SectionHeader
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -42,16 +42,16 @@ fun Changelog(changelog: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.spacing_medium))
+            .padding(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_small)))
+                .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_small)))
                 .background(color = MaterialTheme.colorScheme.secondaryContainer)
                 .padding(
-                    horizontal = dimensionResource(R.dimen.spacing_medium),
-                    vertical = dimensionResource(R.dimen.spacing_small)
+                    horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                    vertical = scaledDimensionResource(R.dimen.spacing_small)
                 )
         ) {
             Text(
@@ -71,7 +71,7 @@ fun Changelog(changelog: String) {
 @Composable
 private fun ChangelogPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Changelog(changelog = app.changes)
     }

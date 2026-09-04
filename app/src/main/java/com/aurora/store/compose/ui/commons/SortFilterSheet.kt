@@ -28,16 +28,17 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
 import com.aurora.store.compose.composable.SectionHeader
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -68,7 +69,9 @@ fun SortFilterSheet(
         ) {
             SortSection(state = state, onStateChange = onStateChange)
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacing_xsmall))
+                modifier = Modifier.padding(
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
+                )
             )
             FilterSection(
                 state = state,
@@ -95,8 +98,8 @@ private fun SortSection(state: SortFilterState, onStateChange: (SortFilterState)
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             )
     ) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -140,15 +143,17 @@ private fun FilterSection(
             text = stringResource(R.string.installed_filter_installer),
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             )
         )
         FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_xsmall))
+                .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
+            horizontalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_xsmall)
+            )
         ) {
             FilterChip(
                 selected = state.installer == null,
@@ -175,13 +180,14 @@ private fun SelectableRow(label: String, selected: Boolean, onClick: () -> Unit)
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         RadioButton(selected = selected, onClick = onClick)
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
@@ -195,11 +201,11 @@ private fun CheckableRow(label: String, checked: Boolean, onCheckedChange: (Bool
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Text(text = label, style = MaterialTheme.typography.bodyLarge)

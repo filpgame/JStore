@@ -13,13 +13,13 @@ import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -31,13 +31,13 @@ fun ContainedLoadingIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(dimensionResource(R.dimen.spacing_small)),
+            .padding(scaledDimensionResource(R.dimen.spacing_small)),
         contentAlignment = Alignment.Center
     ) {
         val description = stringResource(R.string.loading)
         ContainedLoadingIndicator(
             modifier = Modifier
-                .requiredSize(dimensionResource(R.dimen.icon_size_small))
+                .requiredSize(scaledDimensionResource(R.dimen.icon_size_small))
                 .semantics { stateDescription = description }
         )
     }

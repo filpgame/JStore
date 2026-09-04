@@ -9,6 +9,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.PrimaryTabRow
@@ -25,6 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aurora.gplayapi.helpers.contracts.StreamContract
 import com.aurora.gplayapi.helpers.contracts.TopChartsContract
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.util.Preferences
 import com.aurora.store.viewmodel.category.CategoryViewModel
@@ -74,7 +76,9 @@ fun AppsGamesScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         PrimaryTabRow(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.scaledDp),
             selectedTabIndex = pagerState.currentPage
         ) {
             tabs.forEachIndexed { index, tab ->

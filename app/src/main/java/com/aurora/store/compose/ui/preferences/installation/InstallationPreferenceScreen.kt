@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -99,7 +100,9 @@ private fun ScreenContent(
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.Installer) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.Installer)
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_install_mode_title)) },
                     supportingContent = { Text(stringResource(R.string.pref_install_mode_summary)) }
                 )
@@ -112,7 +115,7 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         autoDelete = !autoDelete
                         context.save(PREFERENCE_AUTO_DELETE, autoDelete)
                     },
@@ -134,7 +137,10 @@ private fun ScreenContent(
             if (isDeviceOwner) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable { showClearOwnerDialog = true },
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                            showClearOwnerDialog =
+                                true
+                        },
                         headlineContent = {
                             Text(stringResource(R.string.pref_clear_device_owner_title))
                         },

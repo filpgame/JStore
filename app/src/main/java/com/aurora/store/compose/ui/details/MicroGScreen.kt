@@ -29,13 +29,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.extensions.adaptiveNavigationIcon
@@ -46,6 +44,8 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.MicroG
 import com.aurora.store.compose.composable.ScrollHint
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.PermissionType
@@ -98,15 +98,15 @@ private fun ScreenContent(
             )
         },
         bottomBar = {
-            Surface(shadowElevation = 4.dp) {
+            Surface(shadowElevation = 4.scaledDp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = dimensionResource(R.dimen.spacing_medium))
-                        .padding(vertical = dimensionResource(R.dimen.spacing_small)),
+                        .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium))
+                        .padding(vertical = scaledDimensionResource(R.dimen.spacing_small)),
                     horizontalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_medium)
+                        scaledDimensionResource(R.dimen.spacing_medium)
                     )
                 ) {
                     FilledTonalButton(
@@ -147,7 +147,7 @@ private fun ScreenContent(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
+                    .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
                 state = listState
             ) {
                 item {

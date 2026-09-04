@@ -18,13 +18,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.Constants.PACKAGE_NAME_GMS
 import com.aurora.extensions.TAG
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 private const val MICROG_SETTINGS_ACTIVITY = "org.microg.gms.ui.SettingsActivity"
@@ -43,7 +43,7 @@ fun MicroGInstallerPrerequisiteDialog(onConfirm: () -> Unit = {}, onDismiss: () 
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_small)
+                    scaledDimensionResource(R.dimen.spacing_small)
                 )
             ) {
                 Text(text = stringResource(R.string.microg_installer_prerequisite_desc))

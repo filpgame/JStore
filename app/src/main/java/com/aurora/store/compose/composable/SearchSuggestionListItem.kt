@@ -6,13 +6,11 @@
 package com.aurora.store.compose.composable
 
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
@@ -21,6 +19,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.aurora.gplayapi.SearchSuggestEntry
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 @Composable
@@ -49,7 +49,7 @@ fun SearchSuggestionListItem(
                 contentDescription = null,
                 placeholder = painterResource(R.drawable.ic_search_suggestion),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_default))
+                modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_default))
             )
         },
         trailing = {

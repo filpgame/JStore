@@ -31,17 +31,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aurora.extensions.isWindowCompact
 import com.aurora.store.R
 import com.aurora.store.compose.composable.Logo
 import com.aurora.store.compose.composable.PageIndicator
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.onboarding.navigation.OnboardingPage
 import com.aurora.store.viewmodel.onboarding.OnboardingUiState
@@ -82,7 +82,7 @@ private fun ScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.height(64.dp),
+                modifier = Modifier.height(64.scaledDp),
                 title = {
                     PageIndicator(totalPages = pages.size, currentPage = pagerState.currentPage)
                 },
@@ -93,28 +93,30 @@ private fun ScreenContent(
             )
         },
         bottomBar = {
-            Surface(shadowElevation = 4.dp) {
+            Surface(shadowElevation = 4.scaledDp) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
                         .padding(
-                            vertical = dimensionResource(R.dimen.spacing_medium),
+                            vertical = scaledDimensionResource(R.dimen.spacing_medium),
                             horizontal = if (windowAdaptiveInfo.isWindowCompact) {
-                                dimensionResource(R.dimen.spacing_medium)
+                                scaledDimensionResource(R.dimen.spacing_medium)
                             } else {
-                                dimensionResource(R.dimen.spacing_xlarge)
+                                scaledDimensionResource(R.dimen.spacing_xlarge)
                             }
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_medium),
+                        scaledDimensionResource(R.dimen.spacing_medium),
                         Alignment.End
                     )
                 ) {
                     val buttonWidthModifier = when {
                         windowAdaptiveInfo.isWindowCompact -> Modifier.weight(1F)
-                        else -> Modifier.widthIn(min = dimensionResource(R.dimen.width_button))
+                        else -> Modifier.widthIn(
+                            min = scaledDimensionResource(R.dimen.width_button)
+                        )
                     }
 
                     TextButton(

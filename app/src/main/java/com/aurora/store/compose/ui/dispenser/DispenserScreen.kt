@@ -7,10 +7,10 @@ package com.aurora.store.compose.ui.dispenser
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,7 +19,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,7 +29,10 @@ import com.aurora.extensions.copyToClipBoard
 import com.aurora.store.R
 import com.aurora.store.compose.composable.DispenserListItem
 import com.aurora.store.compose.composable.Placeholder
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.viewmodel.dispenser.DispenserViewModel
 
@@ -84,7 +86,10 @@ private fun ScreenContent(
         },
         floatingActionButton = {
             if (dispensers.isNotEmpty()) {
-                FloatingActionButton(onClick = onAddDispenser) {
+                FloatingActionButton(
+                    modifier = Modifier.size(56.scaledDp),
+                    onClick = onAddDispenser
+                ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_add),
                         contentDescription = stringResource(R.string.add_dispenser_title)
@@ -106,7 +111,7 @@ private fun ScreenContent(
                 modifier = Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
-                    .padding(vertical = dimensionResource(R.dimen.spacing_medium))
+                    .padding(vertical = scaledDimensionResource(R.dimen.spacing_medium))
             ) {
                 items(items = dispensers.toList(), key = { url -> url }) { url ->
                     DispenserListItem(

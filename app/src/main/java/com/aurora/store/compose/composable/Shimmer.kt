@@ -31,11 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 @Composable
@@ -68,7 +68,7 @@ fun shimmerBrush(): Brush {
 private fun ShimmerBlock(modifier: Modifier, radiusRes: Int = R.dimen.radius_small) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(dimensionResource(radiusRes)))
+            .clip(RoundedCornerShape(scaledDimensionResource(radiusRes)))
             .background(shimmerBrush())
     )
 }
@@ -77,13 +77,13 @@ private fun ShimmerBlock(modifier: Modifier, radiusRes: Int = R.dimen.radius_sma
 private fun ShimmerTextStack(modifier: Modifier = Modifier, widthFractions: List<Float>) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_xsmall))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_xsmall))
     ) {
         widthFractions.forEach { fraction ->
             ShimmerBlock(
                 modifier = Modifier
                     .fillMaxWidth(fraction)
-                    .height(14.dp)
+                    .height(14.scaledDp)
             )
         }
     }
@@ -95,14 +95,14 @@ private fun ShimmerListRow(showTrailing: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_small),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         ShimmerBlock(
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium))
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium))
         )
         ShimmerTextStack(
             modifier = Modifier.weight(1f),
@@ -111,8 +111,8 @@ private fun ShimmerListRow(showTrailing: Boolean) {
         if (showTrailing) {
             ShimmerBlock(
                 modifier = Modifier
-                    .width(80.dp)
-                    .height(36.dp),
+                    .width(80.scaledDp)
+                    .height(36.scaledDp),
                 radiusRes = R.dimen.radius_large
             )
         }
@@ -135,19 +135,19 @@ internal fun ShimmerCategoryRow() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_large))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_large))
     ) {
         ShimmerBlock(
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_category))
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_category))
         )
         ShimmerBlock(
             modifier = Modifier
                 .weight(1f)
-                .height(24.dp)
+                .height(24.scaledDp)
         )
     }
 }
@@ -157,37 +157,41 @@ internal fun ShimmerCarouselSection() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(all = dimensionResource(R.dimen.spacing_small)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            .padding(all = scaledDimensionResource(R.dimen.spacing_small)),
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         ShimmerBlock(
             modifier = Modifier
                 .fillMaxWidth(0.42f)
-                .height(16.dp)
+                .height(16.scaledDp)
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            horizontalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            )
         ) {
             repeat(5) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_xsmall)
+                        scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
                 ) {
                     ShimmerBlock(
-                        modifier = Modifier.size(dimensionResource(R.dimen.icon_size_cluster)),
+                        modifier = Modifier.size(
+                            scaledDimensionResource(R.dimen.icon_size_cluster)
+                        ),
                         radiusRes = R.dimen.radius_medium
                     )
                     ShimmerBlock(
                         modifier = Modifier
-                            .width(dimensionResource(R.dimen.icon_size_cluster) * 0.75f)
-                            .height(11.dp)
+                            .width(scaledDimensionResource(R.dimen.icon_size_cluster) * 0.75f)
+                            .height(11.scaledDp)
                     )
                     ShimmerBlock(
                         modifier = Modifier
-                            .width(dimensionResource(R.dimen.icon_size_cluster) * 0.5f)
-                            .height(11.dp)
+                            .width(scaledDimensionResource(R.dimen.icon_size_cluster) * 0.5f)
+                            .height(11.scaledDp)
                     )
                 }
             }
@@ -199,8 +203,8 @@ internal fun ShimmerCarouselSection() {
 internal fun ShimmerAppListItem() {
     ShimmerBlock(
         modifier = Modifier
-            .padding(dimensionResource(R.dimen.spacing_xsmall))
-            .size(dimensionResource(R.dimen.icon_size_cluster)),
+            .padding(scaledDimensionResource(R.dimen.spacing_xsmall))
+            .size(scaledDimensionResource(R.dimen.icon_size_cluster)),
         radiusRes = R.dimen.radius_medium
     )
 }

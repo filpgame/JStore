@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.util.Preferences
@@ -89,7 +90,7 @@ private fun ScreenContent(onCheckUpdatesNow: () -> Unit = {}) {
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         auroraOnly = !auroraOnly
                         context.save(PREFERENCE_FILTER_AURORA_ONLY, auroraOnly)
                     },
@@ -152,7 +153,10 @@ private fun ScreenContent(onCheckUpdatesNow: () -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showAddDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showAddDialog =
+                            true
+                    },
                     leadingContent = {
                         Icon(
                             painter = painterResource(R.drawable.ic_add),

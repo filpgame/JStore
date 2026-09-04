@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedFullScreenSearchBar
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -47,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,8 +58,10 @@ import com.aurora.extensions.toast
 import com.aurora.store.R
 import com.aurora.store.compose.composable.BlackListItem
 import com.aurora.store.compose.composable.ContainedLoadingIndicator
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.ScrollHint
 import com.aurora.store.compose.composable.TextDividerComposable
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.blacklist.menu.BlacklistMenu
 import com.aurora.store.compose.ui.blacklist.menu.MenuItem
@@ -257,8 +257,8 @@ private fun ScreenContent(
                             .fillMaxWidth()
                             .clickable { onRequestSearch(pkg.displayName) }
                             .padding(
-                                horizontal = dimensionResource(R.dimen.spacing_medium),
-                                vertical = dimensionResource(R.dimen.spacing_small)
+                                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                                vertical = scaledDimensionResource(R.dimen.spacing_small)
                             )
                     )
                 }
@@ -307,7 +307,7 @@ private fun ScreenContent(
                     modifier = Modifier.fillMaxWidth(),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_xsmall)
+                        scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
                 ) {
                     if (selectedPackages.isNotEmpty()) {

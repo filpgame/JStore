@@ -17,14 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
@@ -37,7 +36,9 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.compose.ui.unit.LayoutDirection
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.app.AnimatedAppIcon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.AppState
@@ -110,15 +111,17 @@ fun Details(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.spacing_medium))
+            .padding(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         AnimatedAppIcon(
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_large)),
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_large)),
             iconUrl = app.iconArtwork.url,
             inProgress = state.inProgress(),
             progress = state.progress()
         )
-        Column(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_small))) {
+        Column(
+            modifier = Modifier.padding(horizontal = scaledDimensionResource(R.dimen.spacing_small))
+        ) {
             Text(
                 text = app.displayName,
                 style = MaterialTheme.typography.titleLarge,
@@ -127,6 +130,7 @@ fun Details(
             )
             Text(
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clickable(onClick = { onNavigateToDetailsDevProfile(app.developerName) }),
                 text = app.developerName,
                 style = MaterialTheme.typography.bodyMedium,
@@ -173,7 +177,7 @@ fun Details(
 @Composable
 private fun DetailsPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Details(app = app)
     }

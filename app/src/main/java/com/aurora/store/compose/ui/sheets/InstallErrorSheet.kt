@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
@@ -39,6 +38,7 @@ import com.aurora.extensions.copyToClipBoard
 import com.aurora.extensions.toast
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +69,7 @@ fun InstallErrorSheet(
 
             HorizontalDivider(
                 modifier = Modifier.padding(
-                    vertical = dimensionResource(R.dimen.spacing_xsmall)
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                 )
             )
 
@@ -79,8 +79,8 @@ fun InstallErrorSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(
-                        horizontal = dimensionResource(R.dimen.spacing_medium),
-                        vertical = dimensionResource(R.dimen.spacing_xsmall)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                        vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
                 )
             }
@@ -89,8 +89,8 @@ fun InstallErrorSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = dimensionResource(R.dimen.spacing_xsmall),
-                        vertical = dimensionResource(R.dimen.spacing_xsmall)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_xsmall),
+                        vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                     ),
                 horizontalArrangement = Arrangement.End
             ) {
@@ -118,11 +118,13 @@ private fun Header(app: App, showBuy: Boolean = false, onBuy: () -> Unit = {}) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_medium)
+        )
     ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
@@ -131,8 +133,8 @@ private fun Header(app: App, showBuy: Boolean = false, onBuy: () -> Unit = {}) {
                 .build(),
             contentDescription = null,
             modifier = Modifier
-                .requiredSize(dimensionResource(R.dimen.icon_size_medium))
-                .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                .requiredSize(scaledDimensionResource(R.dimen.icon_size_medium))
+                .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(

@@ -16,27 +16,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.data.model.Report
 import com.aurora.store.data.model.formatExodusDate
 
@@ -59,26 +61,26 @@ fun VersionPickerSheet(
                 text = stringResource(R.string.manual_download_select_version),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.spacing_medium),
-                    vertical = dimensionResource(R.dimen.spacing_xsmall)
+                    horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                 )
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_xsmall)))
+            Spacer(Modifier.height(scaledDimensionResource(R.dimen.spacing_xsmall)))
 
             AvailabilityWarning(
                 modifier = Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.spacing_small)
+                    horizontal = scaledDimensionResource(R.dimen.spacing_small)
                 )
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_xsmall)))
+            Spacer(Modifier.height(scaledDimensionResource(R.dimen.spacing_xsmall)))
 
             when {
                 loading -> Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(dimensionResource(R.dimen.spacing_large)),
+                        .padding(scaledDimensionResource(R.dimen.spacing_large)),
                     contentAlignment = Alignment.Center
                 ) {
                     ContainedLoadingIndicator()
@@ -89,17 +91,17 @@ fun VersionPickerSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(
-                        horizontal = dimensionResource(R.dimen.spacing_medium),
-                        vertical = dimensionResource(R.dimen.spacing_medium)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                        vertical = scaledDimensionResource(R.dimen.spacing_medium)
                     )
                 )
 
                 else -> LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 480.dp)
-                        .padding(horizontal = dimensionResource(R.dimen.spacing_small))
-                        .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                        .heightIn(max = 480.scaledDp)
+                        .padding(horizontal = scaledDimensionResource(R.dimen.spacing_small))
+                        .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
                     itemsIndexed(
@@ -121,17 +123,19 @@ fun VersionPickerSheet(
 private fun AvailabilityWarning(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(dimensionResource(R.dimen.radius_medium)),
+        shape = RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)),
         color = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Row(
-            modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
-            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+            modifier = Modifier.padding(scaledDimensionResource(R.dimen.spacing_medium)),
+            horizontalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                modifier = Modifier.height(dimensionResource(R.dimen.icon_size_default)),
+                modifier = Modifier.size(scaledDimensionResource(R.dimen.icon_size_default)),
                 painter = painterResource(R.drawable.ic_help),
                 contentDescription = null
             )
@@ -155,12 +159,13 @@ private fun VersionRow(report: Report, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_large),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_large),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             ),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(2.scaledDp)
     ) {
         Text(
             text = title,

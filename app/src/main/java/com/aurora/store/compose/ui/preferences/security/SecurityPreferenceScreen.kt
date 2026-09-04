@@ -13,6 +13,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +76,9 @@ private fun ScreenContent() {
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable { setAppLock(!appLockEnabled) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        setAppLock(!appLockEnabled)
+                    },
                     headlineContent = { Text(stringResource(R.string.app_lock_title)) },
                     supportingContent = { Text(stringResource(R.string.app_lock_summary)) },
                     trailingContent = {
@@ -89,7 +92,9 @@ private fun ScreenContent() {
 
             item {
                 ListItem(
-                    modifier = Modifier.clickable { setConfirmDeepLink(!confirmDeepLink) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        setConfirmDeepLink(!confirmDeepLink)
+                    },
                     headlineContent = { Text(stringResource(R.string.confirm_deeplink_title)) },
                     supportingContent = { Text(stringResource(R.string.confirm_deeplink_summary)) },
                     trailingContent = {

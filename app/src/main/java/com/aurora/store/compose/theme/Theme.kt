@@ -10,10 +10,13 @@ import android.content.SharedPreferences
 import android.os.Build
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.aurora.store.compose.composition.scaled
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.util.Preferences
 
 /**
@@ -110,5 +115,14 @@ fun AuroraTheme(content: @Composable () -> Unit) {
         }
     }
 
-    MaterialExpressiveTheme(colorScheme = colorScheme, content = content)
+    MaterialExpressiveTheme(
+        colorScheme = colorScheme,
+        typography = Typography().scaled,
+        content = {
+            CompositionLocalProvider(
+                LocalMinimumInteractiveComponentSize provides 48.scaledDp,
+                content = content
+            )
+        }
+    )
 }

@@ -11,11 +11,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -35,7 +35,7 @@ fun InstallFavouritesDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_small)
+                    scaledDimensionResource(R.dimen.spacing_small)
                 )
             ) {
                 Text(text = stringResource(R.string.install_favourites_summary, count))
