@@ -24,17 +24,18 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.aurora.store.R
 import com.aurora.store.compose.composable.app.AnimatedAppIcon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.util.PackageUtil
 
@@ -71,7 +72,9 @@ fun DownloadActionsSheet(
             )
 
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacing_xsmall))
+                modifier = Modifier.padding(
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
+                )
             )
 
             if (download.isRunning) {
@@ -125,14 +128,16 @@ private fun DownloadHeader(download: Download, onShowDetails: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_medium)
+        )
     ) {
         AnimatedAppIcon(
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium)),
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium)),
             iconUrl = download.iconURL,
             inProgress = download.isRunning,
             progress = download.progress.toFloat()
@@ -177,12 +182,13 @@ private fun Item(label: String, enabled: Boolean = true, onClick: () -> Unit) {
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = dimensionResource(R.dimen.spacing_xsmall))
-            .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+            .padding(horizontal = scaledDimensionResource(R.dimen.spacing_xsmall))
+            .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
+            .minimumInteractiveComponentSize()
             .clickable(enabled = enabled, onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             )
     )
 }

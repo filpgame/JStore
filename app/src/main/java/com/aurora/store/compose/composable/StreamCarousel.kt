@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +30,7 @@ import com.aurora.gplayapi.data.models.StreamCluster
 import com.aurora.store.R
 import com.aurora.store.compose.composable.app.AppListItem
 import com.aurora.store.compose.composable.app.LargeAppListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -62,7 +62,9 @@ fun StreamCarousel(
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             state = lazyListState,
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+            verticalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_medium)
+            )
         ) {
             items(5) { ShimmerCarouselSection() }
         }
@@ -89,7 +91,7 @@ fun StreamCarousel(
         modifier = modifier.fillMaxSize(),
         state = lazyListState,
         verticalArrangement = Arrangement.spacedBy(
-            dimensionResource(
+            scaledDimensionResource(
                 if (clusters.size == 1) {
                     R.dimen.spacing_medium
                 } else {
@@ -155,8 +157,8 @@ internal fun ClusterRow(
 
     LazyRow(
         state = rowState,
-        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_small)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        contentPadding = PaddingValues(horizontal = scaledDimensionResource(R.dimen.spacing_small)),
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         itemsIndexed(
             items = cluster.clusterAppList,

@@ -18,7 +18,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +40,7 @@ import com.aurora.store.compose.composable.Placeholder
 import com.aurora.store.compose.composable.StreamCarousel
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.composable.app.LargeAppListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
@@ -171,9 +171,9 @@ private fun ScreenContent(
                     modifier = Modifier
                         .padding(paddingValues)
                         .fillMaxSize()
-                        .padding(vertical = dimensionResource(R.dimen.spacing_medium)),
+                        .padding(vertical = scaledDimensionResource(R.dimen.spacing_medium)),
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_medium)
+                        scaledDimensionResource(R.dimen.spacing_medium)
                     )
                 ) {
                     items(count = apps.itemCount, key = apps.itemKey { it.id }) { index ->

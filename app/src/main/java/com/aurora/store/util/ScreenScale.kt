@@ -16,14 +16,17 @@ import androidx.compose.ui.util.lerp
  *
  * Linear interpolation between anchor points. The anchors deliberately span
  * phone / tablet / automotive / ultrawide so the same APK works across Jaecoo's
- * 9"–15" infotainment variants, future Chery/Omoda/Tiggo screens, and ordinary
- * phones/tablets (which stay at 1.0f).
+ * 9"–15" infotainment variants and future Chery/Omoda/Tiggo screens. Phone
+ * orientation is handled separately through `smallestScreenWidthDp`, so ordinary
+ * phones stay at 1.0f.
  *
  * Why not `WindowSizeClass`? Material's buckets (Compact/Medium/Expanded) are
  * coarse and don't cover vertical automotive (e.g. Tesla-style 1080×1920) or
  * ultrawide dashboards — both common in cars. A continuous scale adapts cleanly.
  */
 object ScreenScale {
+
+    private const val PHONE_SMALLEST_WIDTH_DP = 600
 
     private data class Anchor(val widthDp: Float, val scale: Float)
 
@@ -57,11 +60,24 @@ object ScreenScale {
         }
         return 1f // defensive: unreachable given the bounds above
     }
+
+    /**
+     * Returns the width-based scale while keeping phones at the platform default in landscape.
+     * Android's `smallestScreenWidthDp` is stable across orientation changes, so a phone with a
+     * wide landscape viewport does not get mistaken for a tablet or automotive display.
+     */
+    internal fun forConfiguration(screenWidthDp: Int, smallestScreenWidthDp: Int): Float =
+        if (smallestScreenWidthDp < PHONE_SMALLEST_WIDTH_DP) {
+            1f
+        } else {
+            forWidth(screenWidthDp)
+        }
 }
 
 /**
  * Returns the scale factor for the current [LocalConfiguration] — provided once
  * at the root of [com.aurora.store.ComposeActivity] via [LocalLayoutScale].
+ * The smallest width protects phones from being scaled up in landscape.
  *
  * Named `currentScreenScale` (not `rememberScreenScale`) because it does not
  * retain state — it simply reads [LocalConfiguration] and computes a derived
@@ -71,5 +87,5 @@ object ScreenScale {
 @ReadOnlyComposable
 fun currentScreenScale(): Float {
     val cfg = LocalConfiguration.current
-    return ScreenScale.forWidth(cfg.screenWidthDp)
+    return ScreenScale.forConfiguration(cfg.screenWidthDp, cfg.smallestScreenWidthDp)
 }

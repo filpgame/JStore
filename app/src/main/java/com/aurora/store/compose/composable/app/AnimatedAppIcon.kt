@@ -21,7 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +32,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -60,7 +60,7 @@ fun AnimatedAppIcon(
     )
     val clip = when {
         inProgress -> CircleShape
-        else -> RoundedCornerShape(dimensionResource(R.dimen.radius_medium))
+        else -> RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium))
     }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -103,7 +103,7 @@ private class ProgressProvider : PreviewParameterProvider<Float> {
 @Composable
 private fun AnimatedAppIconPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     AnimatedAppIcon(
-        modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_large)),
+        modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_large)),
         iconUrl = app.iconArtwork.url
     )
 }
@@ -115,7 +115,7 @@ private fun AnimatedAppIconInProgressPreview(
     @PreviewParameter(ProgressProvider::class) progress: Float
 ) {
     AnimatedAppIcon(
-        modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_large)),
+        modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_large)),
         iconUrl = "",
         inProgress = true,
         progress = progress

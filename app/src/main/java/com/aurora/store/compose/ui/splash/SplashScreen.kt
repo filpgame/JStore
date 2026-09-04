@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -49,18 +48,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.Constants.PACKAGE_NAME_PLAY_STORE
 import com.aurora.gplayapi.helpers.AuthHelper
 import com.aurora.store.BuildConfig
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composition.LocalNetworkStatus
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.navigation.Screen
 import com.aurora.store.data.installer.jaecoo.JaecooPlanDetails
@@ -306,7 +306,7 @@ fun SplashScreen(
                     Image(
                         painter = painterResource(R.drawable.ic_logo_alt),
                         contentDescription = null,
-                        modifier = Modifier.size(dimensionResource(R.dimen.icon_size_splash)),
+                        modifier = Modifier.size(scaledDimensionResource(R.dimen.icon_size_splash)),
                         contentScale = ContentScale.FillBounds
                     )
                     Text(
@@ -326,7 +326,7 @@ fun SplashScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(0.1f)
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_xlarge)),
+                    .padding(horizontal = scaledDimensionResource(R.dimen.spacing_xlarge)),
                 contentAlignment = Alignment.Center
             ) {
                 val (statusText, statusColor) = when {
@@ -352,18 +352,20 @@ fun SplashScreen(
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
+                        modifier = Modifier.size(24.scaledDp),
+                        strokeWidth = 2.scaledDp
                     )
                 } else if (showLoginButtons) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(
-                            dimensionResource(R.dimen.spacing_small)
+                            scaledDimensionResource(R.dimen.spacing_small)
                         )
                     ) {
                         Button(
-                            modifier = Modifier.width(dimensionResource(R.dimen.width_button)),
+                            modifier = Modifier.width(
+                                scaledDimensionResource(R.dimen.width_button)
+                            ),
                             enabled = !anonymousLoading && !googleLoading && isOnline,
                             onClick = {
                                 userInitiatedAuth = true
@@ -389,7 +391,9 @@ fun SplashScreen(
                         }
                         if (BuildConfig.SHOW_ANONYMOUS_LOGIN) {
                             OutlinedButton(
-                                modifier = Modifier.width(dimensionResource(R.dimen.width_button)),
+                                modifier = Modifier.width(
+                                    scaledDimensionResource(R.dimen.width_button)
+                                ),
                                 enabled = !googleLoading && !anonymousLoading && isOnline,
                                 onClick = {
                                     userInitiatedAuth = true
@@ -402,8 +406,8 @@ fun SplashScreen(
                         }
                         if (googleLoading || anonymousLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp
+                                modifier = Modifier.size(24.scaledDp),
+                                strokeWidth = 2.scaledDp
                             )
                         }
                     }

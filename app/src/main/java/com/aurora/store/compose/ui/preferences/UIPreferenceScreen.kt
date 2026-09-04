@@ -16,6 +16,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -120,7 +121,7 @@ private fun ScreenContent() {
             if (isTAndAbove) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
                             context.startActivity(
                                 Intent(Settings.ACTION_APP_LOCALE_SETTINGS).apply {
                                     data = ("package:" + context.packageName).toUri()
@@ -138,7 +139,10 @@ private fun ScreenContent() {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showThemeDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showThemeDialog =
+                            true
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_ui_theme)) },
                     supportingContent = { Text(themeEntries.getOrElse(themeStyle) { "" }) }
                 )
@@ -146,7 +150,7 @@ private fun ScreenContent() {
             if (isSAndAbove) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
                             dynamicColors = !dynamicColors
                             context.save(PREFERENCE_DYNAMIC_COLORS, dynamicColors)
                         },
@@ -172,7 +176,10 @@ private fun ScreenContent() {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showTabDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showTabDialog =
+                            true
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_ui_layout_tab)) },
                     supportingContent = { Text(tabEntries.getOrElse(selectedTab) { "" }) }
                 )
@@ -183,7 +190,7 @@ private fun ScreenContent() {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         forYou = !forYou
                         context.save(PREFERENCE_FOR_YOU, forYou)
                     },

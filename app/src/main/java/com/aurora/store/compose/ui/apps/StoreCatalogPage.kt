@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +48,7 @@ import com.aurora.extensions.toast
 import com.aurora.store.R
 import com.aurora.store.compose.composable.ContainedLoadingIndicator
 import com.aurora.store.compose.composable.Placeholder
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.data.room.download.Download
@@ -135,7 +135,7 @@ internal fun StoreCatalogContent(
             else -> LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_small)
+                    scaledDimensionResource(R.dimen.spacing_small)
                 )
             ) {
                 itemsIndexed(
@@ -146,7 +146,7 @@ internal fun StoreCatalogContent(
                         HorizontalDivider(
                             modifier = Modifier
                                 .padding(
-                                    horizontal = dimensionResource(R.dimen.spacing_medium)
+                                    horizontal = scaledDimensionResource(R.dimen.spacing_medium)
                                 )
                                 .semantics { testTag = "store_catalog_divider" }
                         )
@@ -197,17 +197,17 @@ private fun StoreCatalogItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
             model = entry.iconUrl,
             contentDescription = null,
-            modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium))
+            modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium))
         )
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_medium)))
+        Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_medium)))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = entry.title,
@@ -228,9 +228,11 @@ private fun StoreCatalogItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+        Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_small)))
         CatalogActionArea(
-            modifier = Modifier.widthIn(max = dimensionResource(R.dimen.action_area_max_width)),
+            modifier = Modifier.widthIn(
+                max = scaledDimensionResource(R.dimen.action_area_max_width)
+            ),
             download = download,
             packageState = packageState,
             matchesCurrentArtifact = matchesCurrentArtifact,
@@ -263,7 +265,7 @@ private fun CatalogActionArea(
         !packageState.hasValidSigner -> Column(
             modifier = modifier,
             verticalArrangement = Arrangement.spacedBy(
-                dimensionResource(R.dimen.spacing_xsmall)
+                scaledDimensionResource(R.dimen.spacing_xsmall)
             )
         ) {
             OutlinedButton(onClick = {}, enabled = false) {
@@ -280,7 +282,7 @@ private fun CatalogActionArea(
         packageState.isUpToDate -> Column(
             modifier = modifier,
             verticalArrangement = Arrangement.spacedBy(
-                dimensionResource(R.dimen.spacing_xsmall)
+                scaledDimensionResource(R.dimen.spacing_xsmall)
             )
         ) {
             OutlinedButton(onClick = {}, enabled = false) {
@@ -322,7 +324,7 @@ private fun DownloadingState(
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(
-            dimensionResource(R.dimen.spacing_xsmall)
+            scaledDimensionResource(R.dimen.spacing_xsmall)
         )
     ) {
         LinearProgressIndicator(
@@ -353,7 +355,7 @@ private fun InstallingState(modifier: Modifier = Modifier, onCancel: () -> Unit)
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(
-            dimensionResource(R.dimen.spacing_xsmall)
+            scaledDimensionResource(R.dimen.spacing_xsmall)
         )
     ) {
         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -398,7 +400,7 @@ private fun InstallResultDialog(result: InstallResult, onRetry: () -> Unit, onDi
                 text = {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(
-                            dimensionResource(R.dimen.spacing_small)
+                            scaledDimensionResource(R.dimen.spacing_small)
                         )
                     ) {
                         Text(result.displayName)

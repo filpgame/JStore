@@ -18,7 +18,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -28,6 +27,7 @@ import com.aurora.store.compose.composable.Placeholder
 import com.aurora.store.compose.composable.SectionHeader
 import com.aurora.store.compose.composable.ShimmerUpdateItem
 import com.aurora.store.compose.composable.app.AppUpdateItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.download.Download
@@ -89,7 +89,7 @@ fun UpdatesScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_medium)
+                        scaledDimensionResource(R.dimen.spacing_medium)
                     )
                 ) {
                     items(10) { ShimmerUpdateItem() }
@@ -110,7 +110,7 @@ fun UpdatesScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_medium)
+                        scaledDimensionResource(R.dimen.spacing_medium)
                     )
                 ) {
                     if (selfEntries.isNotEmpty()) {

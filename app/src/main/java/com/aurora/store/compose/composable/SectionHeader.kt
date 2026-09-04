@@ -13,19 +13,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -44,10 +45,11 @@ fun SectionHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_xsmall)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
             ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -74,7 +76,7 @@ fun SectionHeader(
             onClick != null -> Icon(
                 painter = painterResource(R.drawable.ic_arrow_right),
                 contentDescription = null,
-                modifier = Modifier.size(dimensionResource(R.dimen.icon_size_default)),
+                modifier = Modifier.size(scaledDimensionResource(R.dimen.icon_size_default)),
                 tint = MaterialTheme.colorScheme.primary
             )
         }

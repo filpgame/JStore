@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.aurora.store.R
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.commons.ForceRestartDialog
@@ -161,14 +162,19 @@ private fun ScreenContent(
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.Dispenser) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.Dispenser)
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_dispenser_title)) },
                     supportingContent = { Text(stringResource(R.string.pref_dispenser_summary)) }
                 )
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showProxyDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showProxyDialog =
+                            true
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_network_proxy_url)) },
                     supportingContent = { Text(stringResource(R.string.pref_network_proxy_desc)) }
                 )
@@ -180,7 +186,7 @@ private fun ScreenContent(
             if (hasMicroG) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
                             microGAuth = !microGAuth
                             context.save(PREFERENCE_MICROG_AUTH, microGAuth)
                         },
@@ -204,7 +210,10 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showVendingDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showVendingDialog =
+                            true
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_vending_version_title)) },
                     supportingContent = { Text(vendingEntries.getOrElse(vendingVersion) { "" }) }
                 )
@@ -228,7 +237,9 @@ private fun ProxyURLDialog(
             Column {
                 Text(
                     text = stringResource(R.string.pref_network_proxy_url_message),
-                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacing_small))
+                    modifier = Modifier.padding(
+                        bottom = scaledDimensionResource(R.dimen.spacing_small)
+                    )
                 )
                 OutlinedTextField(
                     value = url,
@@ -255,7 +266,7 @@ private fun ProxyURLDialog(
                         Text(stringResource(R.string.disable))
                     }
                 }
-                Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+                Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_small)))
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(android.R.string.cancel))
                 }
@@ -281,19 +292,20 @@ internal fun SingleChoiceDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .minimumInteractiveComponentSize()
                             .selectable(
                                 selected = index == selected,
                                 onClick = { onSelect(index) },
                                 role = Role.RadioButton
                             )
-                            .padding(vertical = dimensionResource(R.dimen.spacing_small)),
+                            .padding(vertical = scaledDimensionResource(R.dimen.spacing_small)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = index == selected,
                             onClick = null
                         )
-                        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+                        Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_small)))
                         Text(option)
                     }
                 }

@@ -10,13 +10,14 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -39,9 +40,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.extensions.requiresObbDir
 import com.aurora.store.MainViewModel
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.composable.TrackerUpdateWarningDialog
 import com.aurora.store.compose.composition.LocalNetworkStatus
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.ui.apps.AppsGamesScreen
 import com.aurora.store.compose.ui.commons.MoreSheet
@@ -166,7 +169,10 @@ fun MainScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onNavigateTo(Destination.Search) }) {
+            FloatingActionButton(
+                modifier = Modifier.size(56.scaledDp),
+                onClick = { onNavigateTo(Destination.Search) }
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_round_search),
                     contentDescription = stringResource(R.string.action_search)
@@ -174,7 +180,7 @@ fun MainScreen(
             }
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(modifier = Modifier.heightIn(min = 80.scaledDp)) {
                 MainTab.entries.forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = pagerState.currentPage == index,

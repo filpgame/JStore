@@ -27,13 +27,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -62,8 +61,10 @@ import com.aurora.extensions.browse
 import com.aurora.store.BuildConfig
 import com.aurora.store.R
 import com.aurora.store.compose.composable.AccountListItem
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.SectionHeader
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.commons.LoadingDialog
@@ -277,19 +278,21 @@ fun AccountsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = dimensionResource(R.dimen.spacing_small))
+                    .padding(bottom = scaledDimensionResource(R.dimen.spacing_small))
             ) {
                 Text(
                     text = stringResource(R.string.account_add),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(
-                        horizontal = dimensionResource(R.dimen.spacing_large),
-                        vertical = dimensionResource(R.dimen.spacing_small)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_large),
+                        vertical = scaledDimensionResource(R.dimen.spacing_small)
                     )
                 )
 
                 HorizontalDivider(
-                    modifier = Modifier.padding(bottom = dimensionResource(R.dimen.spacing_xsmall))
+                    modifier = Modifier.padding(
+                        bottom = scaledDimensionResource(R.dimen.spacing_xsmall)
+                    )
                 )
 
                 if (deviceEmails.isNotEmpty()) {
@@ -307,7 +310,7 @@ fun AccountsScreen(
                     }
                     HorizontalDivider(
                         modifier = Modifier.padding(
-                            vertical = dimensionResource(R.dimen.spacing_xsmall)
+                            vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                         )
                     )
                 }
@@ -403,8 +406,8 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(
-            horizontal = dimensionResource(R.dimen.spacing_large),
-            vertical = dimensionResource(R.dimen.spacing_xsmall)
+            horizontal = scaledDimensionResource(R.dimen.spacing_large),
+            vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
         )
     )
 }
@@ -414,12 +417,15 @@ private fun AddOptionRow(iconRes: Int, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_large),
-                vertical = dimensionResource(R.dimen.spacing_medium)
+                horizontal = scaledDimensionResource(R.dimen.spacing_large),
+                vertical = scaledDimensionResource(R.dimen.spacing_medium)
             ),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium)),
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_medium)
+        ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

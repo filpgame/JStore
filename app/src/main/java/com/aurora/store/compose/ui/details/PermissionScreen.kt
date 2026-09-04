@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +37,7 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.Info
 import com.aurora.store.compose.composable.ScrollHint
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.viewmodel.details.AppDetailsViewModel
@@ -94,10 +94,10 @@ private fun ScreenContent(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
+                    .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_medium)
+                    scaledDimensionResource(R.dimen.spacing_medium)
                 )
             ) {
                 items(items = permissionsInfo.keys.toList(), key = { it }) { permission ->

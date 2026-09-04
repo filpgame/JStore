@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +22,7 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
 import com.aurora.store.compose.composable.app.TagListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.util.CommonUtil
@@ -63,8 +63,12 @@ fun Tags(app: App) {
     ).filterKeys { it != null }
 
     LazyRow(
-        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_medium)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        contentPadding = PaddingValues(
+            horizontal = scaledDimensionResource(R.dimen.spacing_medium)
+        ),
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_medium)
+        )
     ) {
         items(items = tags.keys.toList()) { label ->
             TagListItem(label = label!!, painter = painterResource(tags.getValue(label)))
@@ -77,7 +81,7 @@ fun Tags(app: App) {
 @Composable
 private fun TagsPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Tags(app = app)
     }

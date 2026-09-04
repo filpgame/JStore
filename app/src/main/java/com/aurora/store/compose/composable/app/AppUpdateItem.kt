@@ -18,15 +18,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.download.Download
@@ -58,22 +59,23 @@ fun AppUpdateItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium))) {
+        Box(modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium))) {
             AnimatedAppIcon(
-                modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium)),
+                modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium)),
                 iconUrl = update.iconURL,
                 inProgress = inProgress,
                 progress = progress
             )
         }
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_medium)))
+        Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_medium)))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = update.displayName,
@@ -96,7 +98,7 @@ fun AppUpdateItem(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(Modifier.width(dimensionResource(R.dimen.spacing_small)))
+        Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_small)))
         when {
             onUnignore != null -> {
                 OutlinedButton(onClick = onUnignore) {

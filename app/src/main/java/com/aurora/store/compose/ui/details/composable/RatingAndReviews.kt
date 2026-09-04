@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLocale
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +42,7 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.SectionHeader
 import com.aurora.store.compose.composable.details.RatingListItem
 import com.aurora.store.compose.composable.details.ReviewListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -90,12 +90,12 @@ fun RatingAndReviews(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.spacing_medium)),
+            .padding(scaledDimensionResource(R.dimen.spacing_medium)),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_large))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_large))
     ) {
         Column(
-            modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium)),
+            modifier = Modifier.padding(scaledDimensionResource(R.dimen.spacing_medium)),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -114,7 +114,9 @@ fun RatingAndReviews(
         }
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+            verticalArrangement = Arrangement.spacedBy(
+                scaledDimensionResource(R.dimen.spacing_small)
+            )
         ) {
             stars.reversed().fastForEach { star ->
                 RatingListItem(
@@ -129,15 +131,17 @@ fun RatingAndReviews(
         val pagerState = rememberPagerState { featuredReviews.size }
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_medium)),
-            pageSpacing = dimensionResource(R.dimen.spacing_medium)
+            contentPadding = PaddingValues(
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium)
+            ),
+            pageSpacing = scaledDimensionResource(R.dimen.spacing_medium)
         ) { page ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_small)))
+                    .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_small)))
                     .background(color = MaterialTheme.colorScheme.surfaceContainer)
-                    .requiredHeight(dimensionResource(R.dimen.review_height))
+                    .requiredHeight(scaledDimensionResource(R.dimen.review_height))
             ) {
                 ReviewListItem(review = featuredReviews[page])
             }
@@ -158,7 +162,7 @@ private fun RatingAndReviewsPreview(@PreviewParameter(AppPreviewProvider::class)
         )
     }
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         RatingAndReviews(rating = app.rating, featuredReviews = reviews)
     }

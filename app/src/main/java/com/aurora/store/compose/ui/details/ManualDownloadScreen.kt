@@ -39,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -50,7 +49,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import androidx.core.text.isDigitsOnly
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +58,8 @@ import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
 import com.aurora.store.compose.composable.Info
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.sheets.VersionPickerSheet
@@ -156,13 +156,13 @@ private fun ScreenContent(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .padding(dimensionResource(R.dimen.spacing_medium)),
+                .padding(scaledDimensionResource(R.dimen.spacing_medium)),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_medium)
+                    scaledDimensionResource(R.dimen.spacing_medium)
                 )
             ) {
                 Info(
@@ -180,7 +180,7 @@ private fun ScreenContent(
                             coroutineScope.launch { snackBarHostState.showSnackbar(errorMessage) }
                         }
                     },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(10.scaledDp),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
@@ -188,7 +188,9 @@ private fun ScreenContent(
                         if (state.inProgress()) {
                             ContainedLoadingIndicator(
                                 modifier = Modifier
-                                    .requiredSize(dimensionResource(R.dimen.icon_size_default))
+                                    .requiredSize(
+                                        scaledDimensionResource(R.dimen.icon_size_default)
+                                    )
                             )
                         }
                     }
@@ -220,7 +222,7 @@ private fun ScreenContent(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_medium)
+                    scaledDimensionResource(R.dimen.spacing_medium)
                 )
             ) {
                 FilledTonalButton(

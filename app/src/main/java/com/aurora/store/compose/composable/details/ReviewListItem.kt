@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -31,6 +30,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.aurora.gplayapi.data.models.Review
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ReviewPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -45,8 +45,8 @@ fun ReviewListItem(modifier: Modifier = Modifier, review: Review) {
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_small)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_small)
             )
     ) {
         AsyncImage(
@@ -57,11 +57,11 @@ fun ReviewListItem(modifier: Modifier = Modifier, review: Review) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .requiredSize(dimensionResource(R.dimen.icon_size_small))
-                .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                .requiredSize(scaledDimensionResource(R.dimen.icon_size_small))
+                .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
         )
         Column(
-            modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_small))
+            modifier = Modifier.padding(horizontal = scaledDimensionResource(R.dimen.spacing_small))
         ) {
             Text(
                 text = review.userName,

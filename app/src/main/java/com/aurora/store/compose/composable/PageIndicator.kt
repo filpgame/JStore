@@ -21,13 +21,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -43,7 +43,7 @@ fun PageIndicator(modifier: Modifier = Modifier, totalPages: Int, currentPage: I
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(
-            dimensionResource(R.dimen.spacing_xsmall),
+            scaledDimensionResource(R.dimen.spacing_xsmall),
             Alignment.CenterHorizontally
         )
     ) {
@@ -58,9 +58,9 @@ fun PageIndicator(modifier: Modifier = Modifier, totalPages: Int, currentPage: I
             )
             val size by animateDpAsState(
                 targetValue = if (isSelected) {
-                    dimensionResource(R.dimen.radius_medium)
+                    scaledDimensionResource(R.dimen.radius_medium)
                 } else {
-                    dimensionResource(R.dimen.radius_small)
+                    scaledDimensionResource(R.dimen.radius_small)
                 },
                 animationSpec = tween()
             )

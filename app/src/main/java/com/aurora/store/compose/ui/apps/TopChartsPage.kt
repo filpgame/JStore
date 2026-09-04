@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -29,7 +30,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +42,8 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.Placeholder
 import com.aurora.store.compose.composable.ShimmerAppRow
 import com.aurora.store.compose.composable.app.LargeAppListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.ViewState
@@ -121,8 +123,9 @@ private fun TopChartsBody(
         modifier = Modifier.fillMaxSize()
     ) {
         SecondaryScrollableTabRow(
+            modifier = Modifier.heightIn(min = 48.scaledDp),
             selectedTabIndex = selectedIndex,
-            edgePadding = dimensionResource(R.dimen.spacing_small)
+            edgePadding = scaledDimensionResource(R.dimen.spacing_small)
         ) {
             chartTitles.forEachIndexed { index, titleRes ->
                 Tab(
@@ -156,10 +159,10 @@ private fun TopChartsBody(
                         .fillMaxWidth(),
                     state = listState,
                     contentPadding = PaddingValues(
-                        vertical = dimensionResource(R.dimen.spacing_small)
+                        vertical = scaledDimensionResource(R.dimen.spacing_small)
                     ),
                     verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_xsmall)
+                        scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
                 ) {
                     items(count = apps.size, key = { apps[it].id }) { index ->
@@ -173,7 +176,7 @@ private fun TopChartsBody(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(dimensionResource(R.dimen.spacing_large)),
+                                    .padding(scaledDimensionResource(R.dimen.spacing_large)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator()
@@ -187,9 +190,11 @@ private fun TopChartsBody(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = dimensionResource(R.dimen.spacing_small)),
+                contentPadding = PaddingValues(
+                    vertical = scaledDimensionResource(R.dimen.spacing_small)
+                ),
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_xsmall)
+                    scaledDimensionResource(R.dimen.spacing_xsmall)
                 )
             ) {
                 items(8) { ShimmerAppRow() }

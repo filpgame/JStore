@@ -9,7 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -43,7 +45,7 @@ fun TopAppBar(
 ) {
     val activity = LocalActivity.current as? ComponentActivity
     TopAppBar(
-        modifier = modifier,
+        modifier = modifier.heightIn(min = 64.scaledDp),
         title = { if (title != null) Text(text = title) },
         navigationIcon = {
             if (showNavigationIcon) {

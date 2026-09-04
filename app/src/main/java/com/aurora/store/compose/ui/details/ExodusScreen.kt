@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,13 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewWrapper
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.Constants.EXODUS_REPORT_URL
@@ -57,10 +56,13 @@ import com.aurora.extensions.isWindowCompact
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
 import com.aurora.store.compose.composable.Placeholder
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.ScrollHint
 import com.aurora.store.compose.composable.SectionHeader
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.composable.details.ExodusListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.ExodusTracker
@@ -135,7 +137,10 @@ private fun ScreenContentReport(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onRequestAnalysis) {
+            FloatingActionButton(
+                modifier = Modifier.size(56.scaledDp),
+                onClick = onRequestAnalysis
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_scan),
                     contentDescription = stringResource(R.string.action_request_analysis)
@@ -152,7 +157,7 @@ private fun ScreenContentReport(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
+                    .padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
                 state = listState
             ) {
                 item(key = "history_header") {
@@ -179,9 +184,9 @@ private fun ScreenContentReport(
 
 @Composable
 private fun VersionRow(report: Report, isLatest: Boolean, onClick: () -> Unit) {
-    val spacing = dimensionResource(R.dimen.spacing_small)
+    val spacing = scaledDimensionResource(R.dimen.spacing_small)
     ListItem(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.minimumInteractiveComponentSize().clickable(onClick = onClick),
         headlineContent = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -204,8 +209,8 @@ private fun VersionRow(report: Report, isLatest: Boolean, onClick: () -> Unit) {
                             text = stringResource(R.string.exodus_latest),
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(
-                                horizontal = dimensionResource(R.dimen.spacing_small),
-                                vertical = 2.dp
+                                horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                                vertical = 2.scaledDp
                             )
                         )
                     }

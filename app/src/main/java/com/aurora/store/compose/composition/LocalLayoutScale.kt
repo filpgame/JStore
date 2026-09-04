@@ -6,9 +6,13 @@
 
 package com.aurora.store.compose.composition
 
+import androidx.annotation.DimenRes
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -57,4 +61,56 @@ val Dp.scaled: Dp
 val TextUnit.scaled: TextUnit
     @Composable
     @ReadOnlyComposable
-    get() = this * LocalLayoutScale.current
+    get() = if (this == TextUnit.Unspecified) this else this * LocalLayoutScale.current
+
+/** Scale a dimension resource without changing the platform or Compose density. */
+@Composable
+@ReadOnlyComposable
+internal fun scaledDimensionResource(@DimenRes id: Int): Dp = dimensionResource(id).scaled
+
+/** Scale the visual text metrics while preserving all non-size styling. */
+internal val TextStyle.scaled: TextStyle
+    @Composable
+    @ReadOnlyComposable
+    get() = copy(
+        fontSize = fontSize.scaled,
+        lineHeight = lineHeight.scaled,
+        letterSpacing = letterSpacing.scaled
+    )
+
+/** Scale every Material 3 typography role, including expressive emphasized roles. */
+internal val Typography.scaled: Typography
+    @Composable
+    @ReadOnlyComposable
+    get() = copy(
+        displayLarge = displayLarge.scaled,
+        displayMedium = displayMedium.scaled,
+        displaySmall = displaySmall.scaled,
+        headlineLarge = headlineLarge.scaled,
+        headlineMedium = headlineMedium.scaled,
+        headlineSmall = headlineSmall.scaled,
+        titleLarge = titleLarge.scaled,
+        titleMedium = titleMedium.scaled,
+        titleSmall = titleSmall.scaled,
+        bodyLarge = bodyLarge.scaled,
+        bodyMedium = bodyMedium.scaled,
+        bodySmall = bodySmall.scaled,
+        labelLarge = labelLarge.scaled,
+        labelMedium = labelMedium.scaled,
+        labelSmall = labelSmall.scaled,
+        displayLargeEmphasized = displayLargeEmphasized.scaled,
+        displayMediumEmphasized = displayMediumEmphasized.scaled,
+        displaySmallEmphasized = displaySmallEmphasized.scaled,
+        headlineLargeEmphasized = headlineLargeEmphasized.scaled,
+        headlineMediumEmphasized = headlineMediumEmphasized.scaled,
+        headlineSmallEmphasized = headlineSmallEmphasized.scaled,
+        titleLargeEmphasized = titleLargeEmphasized.scaled,
+        titleMediumEmphasized = titleMediumEmphasized.scaled,
+        titleSmallEmphasized = titleSmallEmphasized.scaled,
+        bodyLargeEmphasized = bodyLargeEmphasized.scaled,
+        bodyMediumEmphasized = bodyMediumEmphasized.scaled,
+        bodySmallEmphasized = bodySmallEmphasized.scaled,
+        labelLargeEmphasized = labelLargeEmphasized.scaled,
+        labelMediumEmphasized = labelMediumEmphasized.scaled,
+        labelSmallEmphasized = labelSmallEmphasized.scaled
+    )

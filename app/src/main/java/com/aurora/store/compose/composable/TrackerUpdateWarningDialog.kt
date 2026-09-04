@@ -13,11 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.ExodusTracker
 
@@ -33,7 +33,7 @@ fun TrackerUpdateWarningDialog(
         text = {
             Column {
                 Text(stringResource(R.string.tracker_warning_desc))
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                Spacer(Modifier.height(scaledDimensionResource(R.dimen.spacing_small)))
                 trackers.forEach { tracker ->
                     Text("• ${tracker.name}")
                 }

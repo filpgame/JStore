@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -36,11 +35,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
+import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.composition.scaledDp
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -87,7 +87,7 @@ fun ScrollHint(
         visible = visible,
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = dimensionResource(R.dimen.scroll_hint_padding)),
+            .padding(bottom = scaledDimensionResource(R.dimen.scroll_hint_padding)),
         enter = fadeIn() + slideInVertically { it / 2 },
         exit = fadeOut()
     ) {
@@ -99,7 +99,7 @@ fun ScrollHint(
                 painter = painterResource(id = R.drawable.ic_arrow_down),
                 contentDescription = "Scroll down",
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(32.scaledDp)
                     .offset {
                         IntOffset(0, offsetY.roundToInt())
                     }

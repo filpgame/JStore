@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -28,6 +27,7 @@ import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
 import com.aurora.store.compose.composable.Info
 import com.aurora.store.compose.composable.SectionHeader
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -44,9 +44,9 @@ fun Testing(isSubscribed: Boolean, onTestingSubscriptionChange: (subscribe: Bool
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(dimensionResource(R.dimen.spacing_medium)),
+            .padding(scaledDimensionResource(R.dimen.spacing_medium)),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         Info(
             modifier = Modifier.weight(1F),
@@ -79,7 +79,7 @@ fun Testing(isSubscribed: Boolean, onTestingSubscriptionChange: (subscribe: Bool
 @Composable
 private fun TestingPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Testing(isSubscribed = app.testingProgram!!.isSubscribed)
     }

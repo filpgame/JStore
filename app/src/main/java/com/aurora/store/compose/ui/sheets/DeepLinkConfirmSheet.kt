@@ -26,11 +26,11 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 
 /**
  * Play Store-style bottom sheet shown before opening an app/developer listing from an external
@@ -62,18 +62,20 @@ fun DeepLinkConfirmSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = dimensionResource(R.dimen.spacing_medium),
-                        vertical = dimensionResource(R.dimen.spacing_xsmall)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                        vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                     ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_medium)
+                    scaledDimensionResource(R.dimen.spacing_medium)
                 )
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_logo_alt),
                     contentDescription = null,
-                    modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium))
+                    modifier = Modifier.requiredSize(
+                        scaledDimensionResource(R.dimen.icon_size_medium)
+                    )
                 )
                 Text(
                     text = stringResource(R.string.confirm_deeplink_sheet_title),
@@ -83,16 +85,18 @@ fun DeepLinkConfirmSheet(
             }
 
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = dimensionResource(R.dimen.spacing_xsmall))
+                modifier = Modifier.padding(
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
+                )
             )
 
             Column(
                 modifier = Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.spacing_medium),
-                    vertical = dimensionResource(R.dimen.spacing_xsmall)
+                    horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                 ),
                 verticalArrangement = Arrangement.spacedBy(
-                    dimensionResource(R.dimen.spacing_xsmall)
+                    scaledDimensionResource(R.dimen.spacing_xsmall)
                 )
             ) {
                 Text(
@@ -121,8 +125,8 @@ fun DeepLinkConfirmSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = dimensionResource(R.dimen.spacing_xsmall),
-                        vertical = dimensionResource(R.dimen.spacing_xsmall)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_xsmall),
+                        vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                     ),
                 horizontalArrangement = Arrangement.End
             ) {

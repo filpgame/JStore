@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewWrapper
@@ -25,6 +24,7 @@ import com.aurora.gplayapi.data.models.App
 import com.aurora.gplayapi.data.models.Artwork
 import com.aurora.store.R
 import com.aurora.store.compose.composable.details.ScreenshotListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
@@ -41,14 +41,16 @@ fun Screenshots(screenshots: List<Artwork>, onNavigateToScreenshot: (index: Int)
     // pager which displays the same deduped list.
     val distinctScreenshots = screenshots.distinctBy { it.url }
     LazyRow(
-        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_medium)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small))
+        contentPadding = PaddingValues(
+            horizontal = scaledDimensionResource(R.dimen.spacing_medium)
+        ),
+        horizontalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_small))
     ) {
         items(items = distinctScreenshots, key = { artwork -> artwork.url }) { artwork ->
             ScreenshotListItem(
                 modifier = Modifier
-                    .height(dimensionResource(R.dimen.screenshot_height))
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_small)))
+                    .height(scaledDimensionResource(R.dimen.screenshot_height))
+                    .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_small)))
                     .clickable { onNavigateToScreenshot(distinctScreenshots.indexOf(artwork)) },
                 url = "${artwork.url}=rw-w480-v1-e15"
             )
@@ -61,7 +63,7 @@ fun Screenshots(screenshots: List<Artwork>, onNavigateToScreenshot: (index: Int)
 @Composable
 private fun ScreenshotsPreview(@PreviewParameter(AppPreviewProvider::class) app: App) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Screenshots(screenshots = app.screenshots)
     }

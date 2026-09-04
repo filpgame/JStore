@@ -13,7 +13,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,6 +24,7 @@ import com.aurora.store.compose.composable.ContainedLoadingIndicator
 import com.aurora.store.compose.composable.Placeholder
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.composable.app.LargeAppListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.viewmodel.browse.ExpandedStreamBrowseViewModel
 import kotlin.uuid.Uuid
@@ -76,7 +76,7 @@ fun ExpandedStreamBrowseScreen(
                             .fillMaxSize()
                             .padding(paddingValues),
                         verticalArrangement = Arrangement.spacedBy(
-                            dimensionResource(R.dimen.spacing_medium)
+                            scaledDimensionResource(R.dimen.spacing_medium)
                         )
                     ) {
                         items(

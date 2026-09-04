@@ -9,12 +9,10 @@ package com.aurora.store.compose.composable
 import android.text.format.DateUtils
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,7 +20,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.app.AnimatedAppIcon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.theme.colorGreen
@@ -54,7 +54,7 @@ fun DownloadListItem(modifier: Modifier = Modifier, download: Download, onClick:
         onClick = onClick,
         leading = {
             AnimatedAppIcon(
-                modifier = Modifier.requiredSize(dimensionResource(R.dimen.icon_size_medium)),
+                modifier = Modifier.requiredSize(scaledDimensionResource(R.dimen.icon_size_medium)),
                 iconUrl = download.iconURL,
                 inProgress = download.isRunning,
                 progress = download.progress.toFloat()

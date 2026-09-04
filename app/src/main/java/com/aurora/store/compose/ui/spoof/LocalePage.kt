@@ -14,7 +14,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
@@ -23,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.store.R
 import com.aurora.store.compose.composable.LocaleListItem
 import com.aurora.store.compose.composable.TextDividerComposable
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.viewmodel.spoof.SpoofViewModel
 import java.util.Locale
@@ -52,7 +52,7 @@ private fun PageContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_xsmall))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_xsmall))
     ) {
         stickyHeader {
             Surface(modifier = Modifier.fillMaxWidth()) {

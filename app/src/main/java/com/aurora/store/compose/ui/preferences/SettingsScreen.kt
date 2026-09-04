@@ -9,10 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.TopAppBar
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.preview.ThemePreviewProvider
@@ -46,7 +47,7 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         onNavigateTo(
                             Destination.PermissionRationale(PermissionType.entries.toSet())
                         )
@@ -64,7 +65,7 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         onNavigateTo(Destination.InstallationPreference)
                     },
                     leadingContent = {
@@ -78,7 +79,9 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.UIPreference) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.UIPreference)
+                    },
                     leadingContent = {
                         Icon(
                             painter = painterResource(R.drawable.ic_ui),
@@ -90,7 +93,7 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         onNavigateTo(Destination.NotificationPreference)
                     },
                     leadingContent = {
@@ -104,7 +107,9 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.NetworkPreference) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.NetworkPreference)
+                    },
                     leadingContent = {
                         Icon(
                             painter = painterResource(R.drawable.ic_network),
@@ -116,7 +121,9 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.UpdatesPreference) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.UpdatesPreference)
+                    },
                     leadingContent = {
                         Icon(
                             painter = painterResource(R.drawable.ic_updates),
@@ -128,7 +135,9 @@ private fun ScreenContent(onNavigateTo: (Destination) -> Unit = {}) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { onNavigateTo(Destination.SecurityPreference) },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        onNavigateTo(Destination.SecurityPreference)
+                    },
                     leadingContent = {
                         Icon(
                             painter = painterResource(R.drawable.ic_lock),

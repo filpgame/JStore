@@ -22,7 +22,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +29,7 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.extensions.browse
 import com.aurora.store.R
 import com.aurora.store.compose.composable.LinkListItem
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.about.AboutDialog
 import com.aurora.store.data.model.Link
@@ -96,12 +96,14 @@ private fun PageContent(onAboutAurora: () -> Unit = {}) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = dimensionResource(R.dimen.spacing_medium)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_xsmall))
+        contentPadding = PaddingValues(
+            horizontal = scaledDimensionResource(R.dimen.spacing_medium)
+        ),
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_xsmall))
     ) {
         stickyHeader {
             Column(
-                modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))
+                modifier = Modifier.padding(scaledDimensionResource(R.dimen.spacing_medium))
             ) {
                 Text(
                     text = stringResource(R.string.onboarding_title_welcome),

@@ -20,13 +20,13 @@ import androidx.compose.material3.adaptive.WindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewWrapper
 import com.aurora.extensions.isWindowCompact
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -53,12 +53,14 @@ fun Actions(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(PaddingValues(horizontal = dimensionResource(R.dimen.spacing_medium))),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+            .padding(PaddingValues(horizontal = scaledDimensionResource(R.dimen.spacing_medium))),
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_medium)
+        )
     ) {
         val buttonWidthModifier = when {
             windowAdaptiveInfo.isWindowCompact -> Modifier.weight(1F)
-            else -> Modifier.widthIn(min = dimensionResource(R.dimen.width_button))
+            else -> Modifier.widthIn(min = scaledDimensionResource(R.dimen.width_button))
         }
 
         FilledTonalButton(
@@ -92,7 +94,7 @@ fun Actions(
 @Composable
 private fun ActionsPreview() {
     Column(
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_medium))
+        verticalArrangement = Arrangement.spacedBy(scaledDimensionResource(R.dimen.spacing_medium))
     ) {
         Actions(
             primaryActionDisplayName = stringResource(R.string.action_install),

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -37,6 +38,7 @@ import com.aurora.Constants
 import com.aurora.extensions.toast
 import com.aurora.store.R
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.ui.spoof.menu.MenuItem
 import com.aurora.store.compose.ui.spoof.menu.SpoofMenu
@@ -141,7 +143,9 @@ private fun ScreenContent(
                 .padding(paddingValues)
         ) {
             SecondaryTabRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.scaledDp),
                 selectedTabIndex = pagerState.currentPage
             ) {
                 pages.fastForEachIndexed { index, _ ->

@@ -21,9 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.data.room.account.Account
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,20 +39,20 @@ fun AccountPickerSheet(
                 text = stringResource(R.string.action_switch_account),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.spacing_medium),
-                    vertical = dimensionResource(R.dimen.spacing_xsmall)
+                    horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                    vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                 )
             )
 
-            Spacer(Modifier.height(dimensionResource(R.dimen.spacing_xsmall)))
+            Spacer(Modifier.height(scaledDimensionResource(R.dimen.spacing_xsmall)))
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = dimensionResource(R.dimen.spacing_xsmall))
-                    .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                    .padding(horizontal = scaledDimensionResource(R.dimen.spacing_xsmall))
+                    .clip(RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium)))
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    .padding(vertical = dimensionResource(R.dimen.spacing_xsmall))
+                    .padding(vertical = scaledDimensionResource(R.dimen.spacing_xsmall))
             ) {
                 accounts.forEachIndexed { index, account ->
                     if (index > 0) {
@@ -78,8 +78,8 @@ fun AccountPickerSheet(
                             .fillMaxWidth()
                             .clickable { onSelect(account) }
                             .padding(
-                                horizontal = dimensionResource(R.dimen.spacing_large),
-                                vertical = dimensionResource(R.dimen.spacing_small)
+                                horizontal = scaledDimensionResource(R.dimen.spacing_large),
+                                vertical = scaledDimensionResource(R.dimen.spacing_small)
                             )
                     )
                 }

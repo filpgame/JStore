@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -24,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +34,9 @@ import coil3.request.crossfade
 import com.aurora.gplayapi.data.models.App
 import com.aurora.store.AuroraApp
 import com.aurora.store.R
+import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composable.app.AnimatedAppIcon
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.theme.colorGreen
@@ -104,7 +104,7 @@ fun FavouriteListItem(
                 if (inProgress) {
                     AnimatedAppIcon(
                         modifier = Modifier
-                            .requiredSize(dimensionResource(R.dimen.icon_size_medium)),
+                            .requiredSize(scaledDimensionResource(R.dimen.icon_size_medium)),
                         iconUrl = favourite.iconURL,
                         inProgress = true,
                         progress = progress
@@ -118,8 +118,10 @@ fun FavouriteListItem(
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .requiredSize(dimensionResource(R.dimen.icon_size_medium))
-                            .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_medium)))
+                            .requiredSize(scaledDimensionResource(R.dimen.icon_size_medium))
+                            .clip(
+                                RoundedCornerShape(scaledDimensionResource(R.dimen.radius_medium))
+                            )
                     )
                 }
             },
@@ -127,7 +129,7 @@ fun FavouriteListItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.spacing_xsmall)
+                        scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
                 ) {
                     if (isInstalled && !inProgress) {

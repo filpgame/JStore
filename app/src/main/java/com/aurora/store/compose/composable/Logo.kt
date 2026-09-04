@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +25,7 @@ import androidx.compose.ui.tooling.preview.PreviewWrapper
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 
 /**
@@ -36,7 +36,7 @@ fun Logo(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(
-            dimensionResource(R.dimen.spacing_small),
+            scaledDimensionResource(R.dimen.spacing_small),
             Alignment.CenterVertically
         ),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -48,7 +48,7 @@ fun Logo(modifier: Modifier = Modifier) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .requiredSize(dimensionResource(R.dimen.icon_size_avatar))
+                .requiredSize(scaledDimensionResource(R.dimen.icon_size_avatar))
                 .clip(CircleShape)
         )
         Text(

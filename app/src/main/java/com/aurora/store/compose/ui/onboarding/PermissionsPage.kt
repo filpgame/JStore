@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +22,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aurora.store.R
 import com.aurora.store.compose.composable.PermissionList
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.data.model.Permission
 import com.aurora.store.data.model.PermissionType
@@ -45,12 +45,12 @@ private fun PageContent(
     onPermissionCallback: (type: PermissionType) -> Unit = {}
 ) {
     PermissionList(
-        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.spacing_medium)),
+        modifier = Modifier.padding(horizontal = scaledDimensionResource(R.dimen.spacing_medium)),
         permissions = permissions,
         onPermissionCallback = onPermissionCallback,
         header = {
             Column(
-                modifier = Modifier.padding(dimensionResource(R.dimen.spacing_medium))
+                modifier = Modifier.padding(scaledDimensionResource(R.dimen.spacing_medium))
             ) {
                 Text(
                     text = stringResource(R.string.onboarding_title_permissions),

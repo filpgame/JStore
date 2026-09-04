@@ -16,19 +16,20 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.aurora.store.R
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.data.room.account.Account
 
 @Composable
@@ -36,12 +37,15 @@ fun AccountListItem(account: Account, onClick: () -> Unit, modifier: Modifier = 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .minimumInteractiveComponentSize()
             .clickable(onClick = onClick)
             .padding(
-                horizontal = dimensionResource(R.dimen.spacing_medium),
-                vertical = dimensionResource(R.dimen.spacing_medium)
+                horizontal = scaledDimensionResource(R.dimen.spacing_medium),
+                vertical = scaledDimensionResource(R.dimen.spacing_medium)
             ),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.spacing_small)),
+        horizontalArrangement = Arrangement.spacedBy(
+            scaledDimensionResource(R.dimen.spacing_small)
+        ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
@@ -52,7 +56,7 @@ fun AccountListItem(account: Account, onClick: () -> Unit, modifier: Modifier = 
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .requiredSize(dimensionResource(R.dimen.icon_size_small))
+                .requiredSize(scaledDimensionResource(R.dimen.icon_size_small))
                 .clip(CircleShape)
         )
         Column(
@@ -85,8 +89,8 @@ fun AccountListItem(account: Account, onClick: () -> Unit, modifier: Modifier = 
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer)
                     .padding(
-                        horizontal = dimensionResource(R.dimen.spacing_small),
-                        vertical = dimensionResource(R.dimen.spacing_xsmall)
+                        horizontal = scaledDimensionResource(R.dimen.spacing_small),
+                        vertical = scaledDimensionResource(R.dimen.spacing_xsmall)
                     )
             )
         }

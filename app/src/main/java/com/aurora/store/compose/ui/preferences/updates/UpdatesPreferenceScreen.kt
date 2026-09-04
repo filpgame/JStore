@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -37,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,6 +51,7 @@ import com.aurora.extensions.isIgnoringBatteryOptimizations
 import com.aurora.extensions.isTAndAbove
 import com.aurora.store.R
 import com.aurora.store.compose.composable.TopAppBar
+import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.preferences.network.SingleChoiceDialog
@@ -249,7 +250,10 @@ private fun ScreenContent(
         ) {
             item {
                 ListItem(
-                    modifier = Modifier.clickable { showAutoDialog = true },
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                        showAutoDialog =
+                            true
+                    },
                     headlineContent = { Text(stringResource(R.string.pref_updates_auto)) },
                     supportingContent = { Text(autoEntries.getOrElse(autoMode) { "" }) }
                 )
@@ -257,7 +261,10 @@ private fun ScreenContent(
             if (autoEnabled) {
                 item {
                     ListItem(
-                        modifier = Modifier.clickable { showFrequencyDialog = true },
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                            showFrequencyDialog =
+                                true
+                        },
                         headlineContent = {
                             Text(stringResource(R.string.pref_updates_check_frequency))
                         },
@@ -268,7 +275,10 @@ private fun ScreenContent(
                 }
                 item {
                     ListItem(
-                        modifier = Modifier.clickable { showRestrictionsDialog = true },
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
+                            showRestrictionsDialog =
+                                true
+                        },
                         headlineContent = {
                             Text(stringResource(R.string.pref_updates_restrictions_title))
                         },
@@ -286,7 +296,7 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         onNavigateTo(Destination.SourceFilters)
                     },
                     headlineContent = {
@@ -303,7 +313,7 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         filterFDroid = !filterFDroid
                         context.save(PREFERENCE_FILTER_FDROID, filterFDroid)
                         onCheckUpdatesNow()
@@ -326,7 +336,7 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         updatesExtended = !updatesExtended
                         context.save(PREFERENCE_UPDATES_EXTENDED, updatesExtended)
                         onCheckUpdatesNow()
@@ -349,7 +359,7 @@ private fun ScreenContent(
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable {
                         warnTrackers = !warnTrackers
                         context.save(PREFERENCE_UPDATES_WARN_TRACKERS, warnTrackers)
                     },
@@ -378,7 +388,7 @@ private fun ScreenContent(
                         if (enabled) onCheckUpdatesNow() else onDeleteSelfUpdate()
                     }
                     ListItem(
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable {
                             onSelfUpdateChanged(!selfUpdateEnabled)
                         },
                         headlineContent = { Text(stringResource(R.string.pref_self_update)) },
@@ -425,7 +435,7 @@ private fun UpdatesRestrictionsDialog(onUpdateAutomatedCheck: () -> Unit, onDism
         text = {
             Column {
                 Text(stringResource(R.string.pref_updates_restrictions_desc))
-                Spacer(Modifier.height(dimensionResource(R.dimen.spacing_small)))
+                Spacer(Modifier.height(scaledDimensionResource(R.dimen.spacing_small)))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
