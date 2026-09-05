@@ -31,6 +31,7 @@ import com.aurora.store.data.ExodusRepository
 import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.AuthEvent
 import com.aurora.store.data.event.InstallerEvent
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.model.AppState
 import com.aurora.store.data.model.DownloadStatus
@@ -141,6 +142,11 @@ class AppDetailsViewModel @Inject constructor(
 
     private val _installError = MutableStateFlow<InstallError?>(null)
     val installError = _installError.asStateFlow()
+
+    private val _premiumBlocked = MutableSharedFlow<DownloadEnqueueResult.PremiumBlocked>(
+        extraBufferCapacity = 1
+    )
+    val premiumBlocked = _premiumBlocked.asSharedFlow()
 
     private val _effectivePackageName = MutableStateFlow("")
     val effectivePackageName = _effectivePackageName.asStateFlow()
@@ -378,8 +384,12 @@ class AppDetailsViewModel @Inject constructor(
     fun enqueueDownload(app: App) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
+                val result = catalogEntry?.let { downloadHelper.enqueueStoreCatalog(it) }
                     ?: downloadHelper.enqueueApp(app)
+                when (result) {
+                    DownloadEnqueueResult.Enqueued -> Unit
+                    is DownloadEnqueueResult.PremiumBlocked -> _premiumBlocked.emit(result)
+                }
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {

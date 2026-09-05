@@ -49,6 +49,8 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.ContainedLoadingIndicator
 import com.aurora.store.compose.composable.Placeholder
 import com.aurora.store.compose.composition.scaledDimensionResource
+import com.aurora.store.compose.ui.commons.PremiumCatalogBlockedDialog
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
 import com.aurora.store.data.room.download.Download
@@ -67,12 +69,18 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
     val installationRevision by viewModel.installationRevision.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var result by remember { mutableStateOf<InstallResult?>(null) }
+    var premiumBlocked by remember {
+        mutableStateOf<DownloadEnqueueResult.PremiumBlocked?>(null)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.installFailed.collect { context.toast(R.string.store_catalog_error) }
     }
     LaunchedEffect(viewModel) {
         viewModel.installResult.collect { result = it }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.premiumBlocked.collect { premiumBlocked = it }
     }
 
     StoreCatalogContent(
@@ -96,6 +104,18 @@ fun StoreCatalogPage(viewModel: StoreCatalogViewModel = hiltViewModel()) {
                 result = null
             },
             onDismiss = { result = null }
+        )
+    }
+
+    premiumBlocked?.let { blocked ->
+        PremiumCatalogBlockedDialog(
+            entry = blocked.entry,
+            details = blocked.details,
+            onRetry = {
+                premiumBlocked = null
+                viewModel.install(blocked.entry)
+            },
+            onDismiss = { premiumBlocked = null }
         )
     }
 }
@@ -209,12 +229,23 @@ private fun StoreCatalogItem(
         )
         Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_medium)))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = entry.title,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = entry.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (entry.isPremium) {
+                    Spacer(Modifier.width(scaledDimensionResource(R.dimen.spacing_xsmall)))
+                    Text(
+                        text = stringResource(R.string.store_catalog_premium),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             Text(
                 text = entry.summary,
                 style = MaterialTheme.typography.bodySmall,

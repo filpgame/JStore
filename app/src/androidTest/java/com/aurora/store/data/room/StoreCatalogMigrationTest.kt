@@ -77,6 +77,27 @@ class StoreCatalogMigrationTest {
         }
     }
 
+    @Test
+    fun migration13To14AddsPremiumFlagWithFalseDefault() {
+        val database = helper.writableDatabase
+
+        MigrationHelper.MIGRATION_12_13.migrate(database)
+        MigrationHelper.MIGRATION_13_14.migrate(database)
+
+        assertThat(database.columnNames("store_catalog")).contains("isPremium")
+        database.query("PRAGMA table_info(`store_catalog`)").use { cursor ->
+            val nameIndex = cursor.getColumnIndexOrThrow("name")
+            val defaultIndex = cursor.getColumnIndexOrThrow("dflt_value")
+            var premiumDefault: String? = null
+            while (cursor.moveToNext()) {
+                if (cursor.getString(nameIndex) == "isPremium") {
+                    premiumDefault = cursor.getString(defaultIndex)
+                }
+            }
+            assertThat(premiumDefault).isEqualTo("0")
+        }
+    }
+
     private fun SupportSQLiteDatabase.tableNames(): List<String> =
         query("SELECT name FROM sqlite_master WHERE type = 'table'").use { cursor ->
             buildList {

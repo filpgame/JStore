@@ -28,6 +28,7 @@ data class StoreCatalogEntry(
     val sizeBytes: Long,
     val sha256: String,
     val signerSha256: String,
+    val isPremium: Boolean = false,
     val changelog: String
 ) {
     fun toPlayFile() = PlayFile(

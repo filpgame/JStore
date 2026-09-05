@@ -167,18 +167,10 @@ class ComposeActivity : FragmentActivity() {
             ?: intent.getPackageName()?.let { Screen.AppDetails(it) }
             ?: return defaultStart()
 
-        return resolveJaecooStartDestination(BuildConfig.FLAVOR, requested)
+        return requested
     }
 
     private fun defaultStart(): Screen = Screen.Splash()
 
     private enum class LockState { AUTHENTICATING, LOCKED, UNLOCKED }
 }
-
-/** Route non-default Jaecoo entry points through the entitlement gate before showing the store. */
-internal fun resolveJaecooStartDestination(flavor: String, requested: Screen): Screen =
-    if (flavor == "jaecoo" && requested !is Screen.Splash) {
-        Screen.Splash(pendingDestination = requested)
-    } else {
-        requested
-    }
