@@ -25,6 +25,7 @@ import com.aurora.store.data.room.download.DownloadDao
 import com.aurora.store.data.room.suite.ExternalApk
 import com.aurora.store.data.room.update.Update
 import com.aurora.store.data.work.DownloadWorker
+import com.aurora.store.util.PackageUtil
 import com.aurora.store.util.PathUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
@@ -81,7 +82,7 @@ class DownloadHelper @Inject constructor(
         AuroraApp.scope.launch {
             val downloads = downloadDao.downloads().firstOrNull() ?: emptyList()
             cancelFailedDownloads(downloads)
-            finalizeStaleSelfUpdate(downloads)
+            finalizeStaleInstalls(downloads)
         }.invokeOnCompletion {
             observeDownloads()
             observeInstalls()
@@ -89,18 +90,16 @@ class DownloadHelper @Inject constructor(
     }
 
     /**
-     * Finalizes a self-update download left dangling in [DownloadStatus.INSTALLING]. Replacing
-     * the app's own APK kills the process before the installer's "installed" event can advance
-     * the row, so on the next launch it would otherwise show as installing forever. Reaching
-     * INSTALLING means the install was already committed, so mark it installed; if it actually
-     * failed, the periodic update check re-offers and re-enqueues it.
+     * Finalizes downloads left dangling in [DownloadStatus.INSTALLING] when their expected
+     * package version is installed. This reconciles installs completed while the app process was
+     * unavailable without treating failed or superseded installs as successful.
      */
-    private suspend fun finalizeStaleSelfUpdate(downloads: List<Download>) {
-        downloads.firstOrNull {
-            it.packageName == context.packageName && it.status == DownloadStatus.INSTALLING
-        }?.let {
-            Log.i(TAG, "Finalizing stale self-update install for ${it.packageName}")
-            downloadDao.updateStatus(it.packageName, DownloadStatus.INSTALLED)
+    private suspend fun finalizeStaleInstalls(downloads: List<Download>) {
+        installedInstallingDownloads(downloads) { packageName, versionCode ->
+            PackageUtil.isInstalled(context, packageName, versionCode)
+        }.forEach { download ->
+            Log.i(TAG, "Finalizing stale install for ${download.packageName}")
+            downloadDao.updateStatus(download.packageName, DownloadStatus.INSTALLED)
         }
     }
 
@@ -423,4 +422,15 @@ class DownloadHelper @Inject constructor(
                 work
             )
     }
+}
+
+internal fun installedInstallingDownloads(
+    downloads: List<Download>,
+    isInstalledAtExpectedVersion: (String, Long) -> Boolean
+): List<Download> = downloads.filter { download ->
+    download.status == DownloadStatus.INSTALLING &&
+        isInstalledAtExpectedVersion(
+            download.packageName,
+            download.versionCode
+        )
 }

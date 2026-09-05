@@ -14,11 +14,15 @@ import android.os.IBinder
 import android.os.RemoteException
 import android.util.Log
 import com.aurora.gplayapi.data.models.PlayFile
+import com.aurora.store.AuroraApp
 import com.aurora.store.data.StoreCatalogRepository
+import com.aurora.store.data.event.InstallerEvent
 import com.aurora.store.data.helper.CatalogDownloadAccess
 import com.aurora.store.data.helper.CatalogDownloadPolicy
 import com.aurora.store.data.installer.base.InstallerBase
+import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.download.Download
+import com.aurora.store.data.room.download.DownloadDao
 import com.aurora.store.util.PathUtil
 import com.aurora.store.util.Preferences
 import com.aurora.store.util.Preferences.PREFERENCE_AUTO_DELETE
@@ -58,11 +62,43 @@ sealed interface JaecooBridgeConnection {
 class JaecooInstaller @Inject constructor(
     @ApplicationContext context: Context,
     private val storeCatalogRepository: StoreCatalogRepository,
-    private val catalogDownloadPolicy: Provider<CatalogDownloadPolicy>
+    private val catalogDownloadPolicy: Provider<CatalogDownloadPolicy>,
+    private val downloadDao: DownloadDao
 ) : InstallerBase(context) {
     private val appContext = context.applicationContext
     private val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val ledger = JaecooInstallLedger(appContext)
+    private val terminalFinalizer = JaecooInstallFinalizer(
+        consumeRecord = ledger::consume,
+        effects = JaecooInstallEffects(
+            removeFromQueue = ::removeFromInstallQueue,
+            markInstalled = { packageName ->
+                runBlocking {
+                    downloadDao.updateStatus(packageName, DownloadStatus.INSTALLED)
+                }
+            },
+            emitEvent = AuroraApp.events::send,
+            notifyInstalled = { displayName, packageName ->
+                notifyInstallation(appContext, displayName, packageName)
+            },
+            reportFailure = { failure ->
+                postError(failure.packageName, failure.message, failure.extra)
+            },
+            revokeUris = { record ->
+                record.uris.forEach { uri ->
+                    runCatching {
+                        appContext.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                }
+            },
+            autoDelete = { record ->
+                if (Preferences.getBoolean(appContext, PREFERENCE_AUTO_DELETE)) {
+                    PathUtil.getAppDownloadDir(appContext, record.packageName, record.versionCode)
+                        .deleteRecursively()
+                }
+            }
+        )
+    )
 
     @Volatile private var bridge: IJaecooInstallerBridge? = null
 
@@ -109,7 +145,7 @@ class JaecooInstaller @Inject constructor(
         }
         // This is deliberately before submit: a process death must not orphan URI grants.
         try {
-            ledger.save(JaecooInstallLedger.Record.from(request, download))
+            ledger.save(JaecooInstallRecord.from(request, download))
         } catch (exception: Throwable) {
             revoke(request)
             postBridgeError(download.packageName, BridgeFailure.PREPARE, exception)
@@ -248,33 +284,20 @@ class JaecooInstaller @Inject constructor(
         object : IJaecooInstallerCallback.Stub() {
             override fun onStatus(status: OperationStatus) {
                 if (status.state !in TERMINAL_STATES) return
-                if (status.state == STATE_SUCCESS) {
-                    ledger.find(attemptId)?.let(::onInstallationSuccess)
-                } else {
-                    postError(
-                        packageName,
-                        status.message ?: BridgeFailure.PACKAGE_INSTALLER.message,
-                        "errorCode=${status.errorCode}"
+                terminalFinalizer.finish(
+                    attemptId = attemptId,
+                    isSuccess = status.state == STATE_SUCCESS,
+                    failure = JaecooInstallFailure(
+                        packageName = packageName,
+                        message = status.message ?: BridgeFailure.PACKAGE_INSTALLER.message,
+                        extra = "errorCode=${status.errorCode}"
                     )
-                }
-                terminal(attemptId)
+                )
             }
         }
-
-    private fun onInstallationSuccess(record: JaecooInstallLedger.Record) {
-        notifyInstallation(appContext, record.displayName, record.packageName)
-        if (Preferences.getBoolean(appContext, PREFERENCE_AUTO_DELETE)) {
-            PathUtil.getAppDownloadDir(appContext, record.packageName, record.versionCode)
-                .deleteRecursively()
-        }
-    }
 
     private fun terminal(attemptId: String) {
-        ledger.remove(attemptId)?.uris?.forEach { uri ->
-            runCatching {
-                appContext.revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-        }
+        terminalFinalizer.discard(attemptId)
     }
 
     /**
@@ -522,6 +545,118 @@ class JaecooInstaller @Inject constructor(
     }
 }
 
+internal data class JaecooInstallRecord(
+    val attemptId: String,
+    val operationId: String?,
+    val packageName: String,
+    val versionCode: Long,
+    val displayName: String,
+    val fingerprint: String,
+    val uris: List<Uri>
+) {
+    companion object {
+        fun from(request: InstallRequest, download: Download) = JaecooInstallRecord(
+            attemptId = request.attemptId,
+            operationId = request.attemptId,
+            packageName = request.app.packageName,
+            versionCode = download.versionCode,
+            displayName = download.displayName,
+            fingerprint = request.fingerprint,
+            uris = (request.app.artifacts + request.sharedLibraries.flatMap { it.artifacts })
+                .map { it.uri }
+        )
+    }
+}
+
+internal data class JaecooInstallFailure(
+    val packageName: String,
+    val message: String,
+    val extra: String
+)
+
+internal interface JaecooInstallTerminalEffects {
+    fun removeFromQueue(packageName: String)
+
+    fun emitInstalled(packageName: String)
+
+    fun notifyInstalled(displayName: String, packageName: String)
+
+    fun reportFailure(failure: JaecooInstallFailure)
+
+    fun revokeUris(record: JaecooInstallRecord)
+
+    fun autoDelete(record: JaecooInstallRecord)
+}
+
+internal class JaecooInstallEffects(
+    private val removeFromQueue: (String) -> Unit,
+    private val markInstalled: (String) -> Unit,
+    private val emitEvent: (InstallerEvent) -> Unit,
+    private val notifyInstalled: (String, String) -> Unit,
+    private val reportFailure: (JaecooInstallFailure) -> Unit,
+    private val revokeUris: (JaecooInstallRecord) -> Unit,
+    private val autoDelete: (JaecooInstallRecord) -> Unit
+) : JaecooInstallTerminalEffects {
+    override fun removeFromQueue(packageName: String) {
+        removeFromQueue.invoke(packageName)
+    }
+
+    override fun emitInstalled(packageName: String) {
+        markInstalled.invoke(packageName)
+        emitEvent(InstallerEvent.Installed(packageName))
+    }
+
+    override fun notifyInstalled(displayName: String, packageName: String) {
+        notifyInstalled.invoke(displayName, packageName)
+    }
+
+    override fun reportFailure(failure: JaecooInstallFailure) {
+        reportFailure.invoke(failure)
+    }
+
+    override fun revokeUris(record: JaecooInstallRecord) {
+        revokeUris.invoke(record)
+    }
+
+    override fun autoDelete(record: JaecooInstallRecord) {
+        autoDelete.invoke(record)
+    }
+}
+
+internal class JaecooInstallFinalizer(
+    private val consumeRecord: (String) -> JaecooInstallRecord?,
+    private val effects: JaecooInstallTerminalEffects
+) {
+    fun finish(attemptId: String, isSuccess: Boolean, failure: JaecooInstallFailure) {
+        val record = consumeRecord(attemptId) ?: return
+        try {
+            if (isSuccess) {
+                effects.removeFromQueue(record.packageName)
+                effects.emitInstalled(record.packageName)
+                effects.notifyInstalled(record.displayName, record.packageName)
+            } else {
+                effects.reportFailure(failure)
+            }
+        } finally {
+            try {
+                effects.revokeUris(record)
+            } finally {
+                if (isSuccess) effects.autoDelete(record)
+            }
+        }
+    }
+
+    fun discard(attemptId: String) {
+        consumeRecord(attemptId)?.let(effects::revokeUris)
+    }
+}
+
+internal fun <T> consumePersistedRecord(record: T?, removeRecord: () -> Boolean): T? {
+    if (record == null) return null
+    check(removeRecord()) { "Failed to remove Jaecoo install ledger record" }
+    return record
+}
+
 /** Persistent, multi-operation index. URI grants are retained until a terminal status is seen. */
 private class JaecooInstallLedger(context: Context) {
     private val preferences = context.getSharedPreferences(
@@ -529,40 +664,21 @@ private class JaecooInstallLedger(context: Context) {
         Context.MODE_PRIVATE
     )
 
-    data class Record(
-        val attemptId: String,
-        val operationId: String?,
-        val packageName: String,
-        val versionCode: Long,
-        val displayName: String,
-        val fingerprint: String,
-        val uris: List<Uri>
-    ) {
-        companion object {
-            fun from(request: InstallRequest, download: Download) = Record(
-                attemptId = request.attemptId,
-                operationId = request.attemptId,
-                packageName = request.app.packageName,
-                versionCode = download.versionCode,
-                displayName = download.displayName,
-                fingerprint = request.fingerprint,
-                uris = (request.app.artifacts + request.sharedLibraries.flatMap { it.artifacts })
-                    .map { it.uri }
-            )
-        }
-    }
-
-    fun save(record: Record) {
+    fun save(record: JaecooInstallRecord) {
         check(preferences.edit().putString("record.${record.attemptId}", encode(record)).commit()) {
             "Failed to persist Jaecoo install ledger"
         }
     }
 
-    fun remove(attemptId: String): Record? = find(attemptId)?.also {
-        preferences.edit().remove("record.$attemptId").apply()
+    @Synchronized
+    fun consume(attemptId: String): JaecooInstallRecord? = consumePersistedRecord(
+        find(attemptId)
+    ) {
+        preferences.edit().remove("record.$attemptId").commit()
     }
 
-    fun allRecords(): List<Record> = preferences.all.filterKeys { it.startsWith("record.") }
+    fun allRecords(): List<JaecooInstallRecord> = preferences.all
+        .filterKeys { it.startsWith("record.") }
         .values.mapNotNull { it as? String }.mapNotNull(::decode)
 
     fun recordsForPackage(packageName: String) = allRecords().filter {
@@ -571,7 +687,7 @@ private class JaecooInstallLedger(context: Context) {
 
     fun find(attemptId: String) = preferences.getString("record.$attemptId", null)?.let(::decode)
 
-    private fun encode(record: Record) = listOf(
+    private fun encode(record: JaecooInstallRecord) = listOf(
         record.attemptId,
         record.operationId.orEmpty(),
         record.packageName,
@@ -581,10 +697,10 @@ private class JaecooInstallLedger(context: Context) {
         record.uris.joinToString("\u001f")
     ).joinToString("\u001e")
 
-    private fun decode(value: String): Record? {
+    private fun decode(value: String): JaecooInstallRecord? {
         val fields = value.split("\u001e", limit = 7)
         return fields.takeIf { it.size == 7 && it[0].isNotBlank() }?.let {
-            Record(
+            JaecooInstallRecord(
                 attemptId = it[0],
                 operationId = it[1].ifBlank { null },
                 packageName = it[2],
