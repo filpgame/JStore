@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
@@ -60,6 +61,32 @@ class StoreCatalogPageTest : IsolatedTest() {
 
         composeTestRule.onAllNodesWithTag("store_catalog_divider")
             .assertCountEquals(0)
+    }
+
+    @Test
+    fun rendersPremiumBadgeOnlyForPremiumCatalogEntries() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+
+        setContent {
+            StoreCatalogContent(
+                entries = listOf(
+                    entry("free"),
+                    entry("premium").copy(isPremium = true)
+                ),
+                downloads = emptyMap(),
+                isLoading = false,
+                hasError = false,
+                installationRevision = 0,
+                onInstall = {},
+                onCancel = {},
+                onRetry = {},
+                onUninstall = {},
+                onRefresh = {}
+            )
+        }
+
+        composeTestRule.onAllNodesWithText(context.getString(R.string.store_catalog_premium))
+            .assertCountEquals(1)
     }
 
     @Test

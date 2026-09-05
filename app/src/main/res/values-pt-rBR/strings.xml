@@ -635,6 +635,15 @@
     <string name="tab_j7">Carro</string>
     <string name="store_catalog_empty">Nenhum app disponível para este dispositivo</string>
     <string name="store_catalog_error">Não foi possível carregar o catálogo de apps do dispositivo</string>
+    <string name="store_catalog_premium">Premium</string>
+    <string name="store_catalog_premium_required_title">App Premium</string>
+    <string name="store_catalog_premium_required_message">%1$s exige um plano Trial ou Premium ativo no JConfig para ser baixado.</string>
+    <string name="store_catalog_premium_unavailable_message">Não foi possível verificar o acesso Premium de %1$s. Tente novamente ou abra o JConfig.</string>
+    <string name="store_catalog_premium_diagnostic_code">Código técnico: %1$s</string>
+    <string name="store_catalog_premium_diagnostic_attempts">Tentativas de conexão: %1$d</string>
+    <string name="store_catalog_premium_diagnostic_exception">Detalhe técnico: %1$s</string>
+    <string name="store_catalog_premium_open_jconfig">Comprar Premium no JConfig</string>
+    <string name="store_catalog_premium_retry">Tentar novamente</string>
     <string name="store_catalog_installed">Instalado</string>
     <string name="store_catalog_incompatible_signature">Assinatura incompatível</string>
     <string name="store_catalog_install_success">Instalado com sucesso</string>

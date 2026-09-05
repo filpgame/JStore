@@ -38,7 +38,7 @@ import com.aurora.store.data.room.update.UpdateDao
         StoreCatalogEntry::class,
         StoreCatalogState::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(DownloadConverter::class, AccountConverter::class)

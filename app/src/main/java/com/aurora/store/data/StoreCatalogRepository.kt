@@ -102,6 +102,7 @@ class StoreCatalogRepository @Inject constructor(
         val sizeBytes: Long,
         val sha256: String,
         val signerSha256: String,
+        val premium: Boolean = false,
         val changelog: String? = null,
         val deviceModels: List<String>
     ) {
@@ -128,6 +129,7 @@ class StoreCatalogRepository @Inject constructor(
                 sizeBytes = sizeBytes,
                 sha256 = sha256.lowercase(),
                 signerSha256 = signerSha256.lowercase(),
+                isPremium = premium,
                 changelog = changelog.orEmpty()
             )
         }

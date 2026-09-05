@@ -46,7 +46,8 @@ class DownloadHelper @Inject constructor(
     private val downloadDao: DownloadDao,
     private val appInstaller: AppInstaller,
     private val accountRepository: AccountRepository,
-    private val storeCatalogRepository: StoreCatalogRepository
+    private val storeCatalogRepository: StoreCatalogRepository,
+    private val catalogDownloadPolicy: CatalogDownloadPolicy
 ) {
 
     companion object {
@@ -158,52 +159,83 @@ class DownloadHelper @Inject constructor(
      * Enqueues an app for download & install
      * @param app [App] to download
      */
-    suspend fun enqueueApp(app: App) {
+    suspend fun enqueueApp(app: App): DownloadEnqueueResult {
         val catalogEntry = storeCatalogRepository.resolveForDownload(app.packageName)
         if (catalogEntry != null) {
-            enqueueStoreCatalog(catalogEntry)
+            return enqueueStoreCatalog(catalogEntry)
         } else {
             enqueue(Download.fromApp(app))
+            return DownloadEnqueueResult.Enqueued
         }
     }
 
-    suspend fun enqueueStoreCatalog(entry: StoreCatalogEntry) {
+    suspend fun enqueueStoreCatalog(entry: StoreCatalogEntry): DownloadEnqueueResult {
+        when (val access = catalogDownloadPolicy.evaluate(entry)) {
+            CatalogDownloadAccess.Allowed -> Unit
+            is CatalogDownloadAccess.Blocked -> return DownloadEnqueueResult.PremiumBlocked(
+                entry = access.entry,
+                details = access.details
+            )
+        }
         val externalApk = entry.toExternalApk()
         enqueue(Download.fromExternalApk(externalApk, externalApk.isInstalled(context)))
+        return DownloadEnqueueResult.Enqueued
     }
 
     /**
      * Enqueues an app for download using a chosen account. Binding to the default clears any
      * existing binding; a non-default account is persisted so future updates use it.
      */
-    suspend fun enqueueApp(app: App, accountId: String) {
+    suspend fun enqueueApp(app: App, accountId: String): DownloadEnqueueResult {
         accountRepository.bindApp(app.packageName, accountId)
-        enqueueApp(app)
+        return enqueueApp(app)
     }
 
     /**
      * Enqueues an update for download & install
      * @param update [Update] to download
      */
-    suspend fun enqueueUpdate(update: Update) {
+    suspend fun enqueueUpdate(update: Update): DownloadEnqueueResult {
+        val catalogEntry = storeCatalogRepository.findByCustomPackage(update.packageName)
+        if (catalogEntry != null) {
+            when (val access = catalogDownloadPolicy.evaluate(catalogEntry)) {
+                CatalogDownloadAccess.Allowed -> Unit
+                is CatalogDownloadAccess.Blocked -> return DownloadEnqueueResult.PremiumBlocked(
+                    entry = access.entry,
+                    details = access.details
+                )
+            }
+        }
         enqueue(Download.fromUpdate(update))
+        return DownloadEnqueueResult.Enqueued
     }
 
     /**
      * Enqueues an update using a chosen account. Binding to the default clears any existing
      * binding; a non-default account is persisted so this and future updates use it.
      */
-    suspend fun enqueueUpdate(update: Update, accountId: String) {
+    suspend fun enqueueUpdate(update: Update, accountId: String): DownloadEnqueueResult {
         accountRepository.bindApp(update.packageName, accountId)
-        enqueueUpdate(update)
+        return enqueueUpdate(update)
     }
 
     /**
      * Enqueues ExternalApk for download & install
      * @param externalApk [ExternalApk] to download
      */
-    suspend fun enqueueStandalone(externalApk: ExternalApk) {
+    suspend fun enqueueStandalone(externalApk: ExternalApk): DownloadEnqueueResult {
+        val catalogEntry = storeCatalogRepository.findByCustomPackage(externalApk.packageName)
+        if (catalogEntry != null) {
+            when (val access = catalogDownloadPolicy.evaluate(catalogEntry)) {
+                CatalogDownloadAccess.Allowed -> Unit
+                is CatalogDownloadAccess.Blocked -> return DownloadEnqueueResult.PremiumBlocked(
+                    entry = access.entry,
+                    details = access.details
+                )
+            }
+        }
         enqueue(Download.fromExternalApk(externalApk, externalApk.isInstalled(context)))
+        return DownloadEnqueueResult.Enqueued
     }
 
     /**
@@ -251,14 +283,25 @@ class DownloadHelper @Inject constructor(
      * re-installs without re-downloading. No-op if the download is already active.
      * @param packageName Name of the package to retry
      */
-    suspend fun retryDownload(packageName: String) {
-        val existing = getDownload(packageName) ?: return
+    suspend fun retryDownload(packageName: String): DownloadEnqueueResult {
+        val catalogEntry = storeCatalogRepository.findByCustomPackage(packageName)
+        if (catalogEntry != null) {
+            when (val access = catalogDownloadPolicy.evaluate(catalogEntry)) {
+                CatalogDownloadAccess.Allowed -> Unit
+                is CatalogDownloadAccess.Blocked -> return DownloadEnqueueResult.PremiumBlocked(
+                    entry = access.entry,
+                    details = access.details
+                )
+            }
+        }
+        val existing = getDownload(packageName) ?: return DownloadEnqueueResult.Enqueued
         if (existing.isActive) {
             Log.i(TAG, "Skipping retry for $packageName; already ${existing.status}")
-            return
+            return DownloadEnqueueResult.Enqueued
         }
         Log.i(TAG, "Retrying download for $packageName")
         downloadDao.updateStatus(packageName, DownloadStatus.QUEUED)
+        return DownloadEnqueueResult.Enqueued
     }
 
     /**

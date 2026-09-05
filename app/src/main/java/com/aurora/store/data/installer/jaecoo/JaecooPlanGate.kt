@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-/** Possible outcomes of a Jconfig plan-gate check. */
+/** Possible outcomes of a Jconfig entitlement check. */
 enum class JaecooPlanResult {
     /** User is on the Jconfig trial plan — allowed. */
     TRIAL,
@@ -25,26 +25,26 @@ enum class JaecooPlanResult {
     /** User has an active Premium subscription — allowed. */
     PREMIUM,
 
-    /** User is on the Free plan — must be blocked from the store. */
+    /** User is on the Free plan — blocked from Premium catalog apps. */
     FREE,
 
     /** Jconfig is still resolving the plan — currently no decision. */
     LOADING,
 
-    /** Jconfig cannot identify the device (no VIN/serial) — must be blocked. */
+    /** Jconfig cannot identify the device (no VIN/serial) — blocks Premium catalog apps. */
     IDENTITY_UNAVAILABLE,
 
-    /** Jconfig service is not installed or bind-timeout fired — must be blocked. */
+    /** Jconfig service is not installed or bind-timeout fired — blocks Premium catalog apps. */
     JCONFIG_UNAVAILABLE,
 
-    /** Bridge is older than [JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT] — must be blocked. */
+    /** Bridge is older than [JaecooInstaller.MIN_SERVICE_VERSION_FOR_ENTITLEMENT]. */
     JCONFIG_OUTDATED,
 
     /** Bridge call failed with an unknown error or returned an unrecognised wire value. */
     ERROR
 }
 
-/** Stable, privacy-safe code shown to users when the Jconfig bridge denies the splash gate. */
+/** Stable, privacy-safe code shown when the Jconfig bridge denies Premium access. */
 enum class JaecooPlanDiagnostic {
     NONE,
     PLAN_FREE,
@@ -85,7 +85,7 @@ enum class JaecooPlanDiagnostic {
         }
 }
 
-/** Result returned to the splash so it can render a support-friendly diagnostic. */
+/** Result returned to the Premium catalog UI for a support-friendly diagnostic. */
 data class JaecooPlanDetails(
     val plan: JaecooPlanResult,
     val diagnostic: JaecooPlanDiagnostic = JaecooPlanDiagnostic.NONE,
@@ -93,8 +93,8 @@ data class JaecooPlanDetails(
     val attempts: Int = 1
 )
 
-/** Only trial and premium plans can submit installations through the Jaecoo bridge. */
-fun JaecooPlanResult.allowsJaecooInstall(): Boolean = when (this) {
+/** Only trial and premium plans can download Premium catalog apps. */
+fun JaecooPlanResult.allowsPremiumDownload(): Boolean = when (this) {
     JaecooPlanResult.TRIAL, JaecooPlanResult.PREMIUM -> true
     JaecooPlanResult.FREE,
     JaecooPlanResult.LOADING,
@@ -106,7 +106,7 @@ fun JaecooPlanResult.allowsJaecooInstall(): Boolean = when (this) {
 
 /**
  * Translates the wire-format string returned by `IJaecooInstallerBridge.getEntitlement()`
- * into the consumer-facing [JaecooPlanResult] used by the splash-screen gate.
+ * into the consumer-facing [JaecooPlanResult] used by the Premium catalog gate.
  *
  * Pure function extracted so the mapping can be unit tested without the bridge binder.
  */
@@ -121,11 +121,9 @@ fun mapWireToResult(wire: String?): JaecooPlanResult = when (wire) {
 }
 
 /**
- * Splash-screen gate that queries the Jconfig installer bridge for the current plan.
+ * Entitlement gate that queries the Jconfig installer bridge for the current plan.
  *
- * The gate runs only on the `jaecoo` product flavor (see the SplashScreen
- * LaunchedEffect). On other flavors the gate is a no-op and consumers should
- * skip [currentPlan] altogether.
+ * Consumers apply the result only to Premium catalog entries in the `jaecoo` product flavor.
  */
 @Singleton
 class JaecooPlanGate(
@@ -144,7 +142,7 @@ class JaecooPlanGate(
     }
 
     /**
-     * Acquires the plan and preserves the failed IPC boundary for the splash dialog.
+     * Acquires the plan and preserves the failed IPC boundary for the catalog dialog.
      * One transient bridge failure is retried after a short delay so an app-start race does not
      * block a valid subscriber.
      */

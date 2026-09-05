@@ -224,6 +224,7 @@ jobs:
             "sizeBytes": ${SIZE_BYTES},
             "sha256": "${SHA256}",
             "signerSha256": "${SIGNER_SHA256}",
+            "premium": false,
             "deviceModels": ["J7"],
             "changelog": "${CHANGELOG}"
           }
@@ -277,6 +278,7 @@ jobs:
                sizeBytes: $sizeBytes,
                sha256: $sha256,
                signerSha256: $signerSha256,
+               premium: false,
                deviceModels: ["J7"],
                changelog: $changelog }')
           printf '%s' "$PAYLOAD" | curl --fail-with-body --silent --show-error \

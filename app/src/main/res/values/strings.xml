@@ -48,19 +48,6 @@
     <string name="account_anonymous">"Anonymous"</string>
     <string name="account_google">"Google"</string>
 
-    <!-- Splash-screen gate that blocks JStore for non-Premium Jconfig users. Used by JaecooPlanBlockedDialog. -->
-    <string name="jconfig_gate_title">Loja exclusiva Premium</string>
-    <string name="jconfig_gate_message_fresh">A JStore é exclusiva para assinantes Premium. Abra o Jconfig para conhecer os planos.</string>
-    <string name="jconfig_gate_message_session">Sua assinatura atual não permite acessar a JStore. Abra o Jconfig para atualizar para Premium.</string>
-    <string name="jconfig_gate_message_identity">Não foi possível verificar a identidade do dispositivo. Conclua a configuração no Jconfig.</string>
-    <string name="jconfig_gate_message_unavailable">Serviço Jconfig indisponível no momento. Tente novamente.</string>
-    <string name="jconfig_gate_message_loading">O Jconfig ainda está verificando sua assinatura. Aguarde alguns instantes e tente novamente.</string>
-    <string name="jconfig_gate_message_outdated">Versão do Jconfig instalada não é compatível. Atualize o Jconfig para abrir a loja.</string>
-    <string name="jconfig_gate_diagnostic_code">Código técnico: %1$s</string>
-    <string name="jconfig_gate_diagnostic_attempts">Tentativas de conexão: %1$d</string>
-    <string name="jconfig_gate_diagnostic_exception">Detalhe técnico: %1$s</string>
-    <string name="jconfig_gate_open_jconfig">Abrir Jconfig</string>
-    <string name="jconfig_gate_retry">Tentar novamente</string>
     <string name="account_login_using">Log in using</string>
     <string name="account_logout">Log out from Aurora</string>
     <string name="account_set_default">Set as default</string>
@@ -141,6 +128,15 @@
     <string name="tab_j7">Carro</string>
     <string name="store_catalog_empty">No apps are available for this device</string>
     <string name="store_catalog_error">Could not load the device app catalogue</string>
+    <string name="store_catalog_premium">Premium</string>
+    <string name="store_catalog_premium_required_title">Premium app</string>
+    <string name="store_catalog_premium_required_message">%1$s requires an active JConfig Trial or Premium plan to download.</string>
+    <string name="store_catalog_premium_unavailable_message">Could not verify Premium access for %1$s. Try again or open JConfig.</string>
+    <string name="store_catalog_premium_diagnostic_code">Technical code: %1$s</string>
+    <string name="store_catalog_premium_diagnostic_attempts">Connection attempts: %1$d</string>
+    <string name="store_catalog_premium_diagnostic_exception">Technical detail: %1$s</string>
+    <string name="store_catalog_premium_open_jconfig">Buy Premium in JConfig</string>
+    <string name="store_catalog_premium_retry">Try again</string>
     <string name="store_catalog_installed">Installed</string>
     <string name="store_catalog_incompatible_signature">Incompatible signature</string>
     <string name="store_catalog_install_success">Installed successfully</string>

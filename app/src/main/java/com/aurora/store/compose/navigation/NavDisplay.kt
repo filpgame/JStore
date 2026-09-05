@@ -312,7 +312,6 @@ fun NavDisplay(startDestination: NavKey) {
             entry<Screen.Splash> { screen ->
                 SplashScreen(
                     deepLinkPackageName = screen.packageName,
-                    pendingDestination = screen.pendingDestination,
                     onNavigateTo = ::navigate
                 )
             }

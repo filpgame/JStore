@@ -58,6 +58,10 @@ object MigrationHelper {
         override fun migrate(db: SupportSQLiteDatabase) = migrateFrom12To13(db)
     }
 
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) = migrateFrom13To14(db)
+    }
+
     private const val TAG = "MigrationHelper"
 
     private fun migrateFrom1To2(database: SupportSQLiteDatabase) {
@@ -326,6 +330,12 @@ object MigrationHelper {
                 "`id` INTEGER NOT NULL, " +
                 "`isValid` INTEGER NOT NULL, " +
                 "PRIMARY KEY(`id`))"
+        )
+    }
+
+    private fun migrateFrom13To14(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "ALTER TABLE `store_catalog` ADD COLUMN `isPremium` INTEGER NOT NULL DEFAULT 0"
         )
     }
 }

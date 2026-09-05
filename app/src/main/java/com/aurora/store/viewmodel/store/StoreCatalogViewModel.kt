@@ -13,6 +13,7 @@ import com.aurora.extensions.TAG
 import com.aurora.store.AuroraApp
 import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.InstallerEvent
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.room.catalog.StoreCatalogEntry
@@ -96,6 +97,11 @@ class StoreCatalogViewModel @Inject constructor(
     private val _installResult = MutableSharedFlow<InstallResult>(extraBufferCapacity = 1)
     val installResult = _installResult.asSharedFlow()
 
+    private val _premiumBlocked = MutableSharedFlow<DownloadEnqueueResult.PremiumBlocked>(
+        extraBufferCapacity = 1
+    )
+    val premiumBlocked = _premiumBlocked.asSharedFlow()
+
     private val refreshGate = AtomicBoolean(false)
 
     init {
@@ -133,7 +139,10 @@ class StoreCatalogViewModel @Inject constructor(
     fun install(entry: StoreCatalogEntry) {
         viewModelScope.launch {
             try {
-                downloadHelper.enqueueStoreCatalog(entry)
+                when (val result = downloadHelper.enqueueStoreCatalog(entry)) {
+                    DownloadEnqueueResult.Enqueued -> Unit
+                    is DownloadEnqueueResult.PremiumBlocked -> _premiumBlocked.emit(result)
+                }
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -148,7 +157,12 @@ class StoreCatalogViewModel @Inject constructor(
     }
 
     fun retry(packageName: String) {
-        viewModelScope.launch { downloadHelper.retryDownload(packageName) }
+        viewModelScope.launch {
+            when (val result = downloadHelper.retryDownload(packageName)) {
+                DownloadEnqueueResult.Enqueued -> Unit
+                is DownloadEnqueueResult.PremiumBlocked -> _premiumBlocked.emit(result)
+            }
+        }
     }
 
     fun uninstall(entry: StoreCatalogEntry) {

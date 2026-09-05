@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,7 +59,9 @@ import com.aurora.store.R
 import com.aurora.store.compose.composable.ScaledIcon as Icon
 import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
+import com.aurora.store.compose.ui.commons.PremiumCatalogBlockedDialog
 import com.aurora.store.data.event.BusEvent
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.room.account.Account
 import com.aurora.store.data.room.update.Update
@@ -76,6 +79,18 @@ fun AppUpdateSheet(
     val isBlacklisted = viewModel.blacklistProvider.isBlacklisted(update.packageName)
     val accounts by viewModel.accounts.collectAsStateWithLifecycle()
     var showAccounts by remember { mutableStateOf(false) }
+    var premiumBlocked by remember {
+        mutableStateOf<DownloadEnqueueResult.PremiumBlocked?>(null)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.updateResult.collect { result ->
+            when (result) {
+                DownloadEnqueueResult.Enqueued -> onDismiss()
+                is DownloadEnqueueResult.PremiumBlocked -> premiumBlocked = result
+            }
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -138,7 +153,6 @@ fun AppUpdateSheet(
                     accounts = accounts,
                     onSelect = { account ->
                         viewModel.updateWithAccount(update, account.id)
-                        onDismiss()
                     }
                 )
             }
@@ -188,6 +202,18 @@ fun AppUpdateSheet(
 
             Spacer(Modifier.navigationBarsPadding())
         }
+    }
+
+    premiumBlocked?.let { blocked ->
+        PremiumCatalogBlockedDialog(
+            entry = blocked.entry,
+            details = blocked.details,
+            onRetry = {
+                premiumBlocked = null
+                viewModel.retryPremiumUpdate()
+            },
+            onDismiss = { premiumBlocked = null }
+        )
     }
 }
 
