@@ -281,8 +281,12 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun isPremiumDownloadBlocked(): Boolean {
-        val entry = storeCatalogRepository.findByCustomPackage(download.packageName)
-            ?: return false
+        val entry = runCatching {
+            storeCatalogRepository.findByCustomPackage(download.packageName)
+        }.getOrElse { exception ->
+            Log.w(TAG, "Could not resolve catalog metadata for ${download.packageName}", exception)
+            return false
+        } ?: return false
         return when (catalogDownloadPolicy.evaluate(entry)) {
             CatalogDownloadAccess.Allowed -> false
             is CatalogDownloadAccess.Blocked -> {

@@ -275,7 +275,10 @@ fun UpdatesScreen(
                 premiumBlocked = null
                 viewModel.retryPremiumDownload()
             },
-            onDismiss = { premiumBlocked = null }
+            onDismiss = {
+                premiumBlocked = null
+                viewModel.dismissPremiumDownload()
+            }
         )
     }
 }

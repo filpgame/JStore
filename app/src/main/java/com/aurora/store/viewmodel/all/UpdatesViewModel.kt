@@ -95,6 +95,11 @@ class UpdatesViewModel @Inject constructor(
         viewModelScope.launch { processUpdate(pending.update) }
     }
 
+    fun dismissPremiumDownload() {
+        activePremiumUpdate = null
+        viewModelScope.launch { showNextPremiumBlock() }
+    }
+
     private suspend fun processUpdate(update: Update) {
         when (val result = downloadHelper.enqueueUpdate(update)) {
             DownloadEnqueueResult.Enqueued -> showNextPremiumBlock()

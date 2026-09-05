@@ -12,6 +12,7 @@ import android.content.ServiceConnection
 import android.net.Uri
 import android.os.IBinder
 import android.os.RemoteException
+import android.util.Log
 import com.aurora.gplayapi.data.models.PlayFile
 import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.helper.CatalogDownloadAccess
@@ -162,6 +163,12 @@ class JaecooInstaller @Inject constructor(
             terminal(attemptId)
             return
         }
+        // Revalidate immediately before crossing the privileged installation boundary. This
+        // closes the race where the plan changes during artifact preparation or bridge setup.
+        if (!hasInstallAccess(download.packageName)) {
+            terminal(attemptId)
+            return
+        }
         try {
             val operationId = service.submit(request, callbackFor(download.packageName, attemptId))
             if (operationId != attemptId) {
@@ -191,12 +198,18 @@ class JaecooInstaller @Inject constructor(
     }
 
     private fun hasInstallAccess(packageName: String): Boolean {
-        val access = runCatching {
+        val catalogEntry = runCatching {
             runBlocking {
-                storeCatalogRepository.findByCustomPackage(packageName)?.let { entry ->
-                    catalogDownloadPolicy.get().evaluate(entry)
-                }
+                storeCatalogRepository.findByCustomPackage(packageName)
             }
+        }.getOrElse { exception ->
+            // A catalog lookup failure must not turn the Jaecoo installer into a global gate.
+            // Known Premium entries are still checked fail-closed below.
+            Log.w(TAG, "Could not resolve catalog metadata for $packageName", exception)
+            return true
+        } ?: return true
+        val access = runCatching {
+            runBlocking { catalogDownloadPolicy.get().evaluate(catalogEntry) }
         }.getOrElse {
             postBridgeError(packageName, BridgeFailure.PLAN, it)
             return false
@@ -487,6 +500,7 @@ class JaecooInstaller @Inject constructor(
     }
 
     companion object {
+        const val TAG = "JaecooInstaller"
         const val PROTOCOL_VERSION = 1
         const val BRIDGE_ACTION = "com.jaecoo.installer.bridge.BIND"
         const val BRIDGE_PACKAGE = "com.frodrigues.jconfig"
