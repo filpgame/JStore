@@ -81,6 +81,7 @@ import com.aurora.store.compose.preview.AppPreviewProvider
 import com.aurora.store.compose.preview.ThemePreviewProvider
 import com.aurora.store.compose.ui.commons.ForceRestartDialog
 import com.aurora.store.compose.ui.commons.PermissionRationaleScreen
+import com.aurora.store.compose.ui.commons.PremiumCatalogBlockedDialog
 import com.aurora.store.compose.ui.details.composable.Actions
 import com.aurora.store.compose.ui.details.composable.Changelog
 import com.aurora.store.compose.ui.details.composable.Compatibility
@@ -99,6 +100,7 @@ import com.aurora.store.compose.ui.details.navigation.ExtraScreen
 import com.aurora.store.compose.ui.dev.DevProfileScreen
 import com.aurora.store.compose.ui.sheets.AccountPickerSheet
 import com.aurora.store.compose.ui.sheets.InstallErrorSheet
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.model.AppState
 import com.aurora.store.data.model.ExodusTracker
@@ -141,6 +143,9 @@ fun AppDetailsScreen(
     val effectivePackageName by viewModel.effectivePackageName.collectAsStateWithLifecycle()
     val isCatalogMapped by viewModel.isCatalogMapped.collectAsStateWithLifecycle()
     val canReview by viewModel.canReview.collectAsStateWithLifecycle()
+    var premiumBlocked by remember {
+        mutableStateOf<DownloadEnqueueResult.PremiumBlocked?>(null)
+    }
 
     LaunchedEffect(key1 = packageName) { viewModel.fetchAppDetails(packageName) }
 
@@ -152,6 +157,10 @@ fun AppDetailsScreen(
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.premiumBlocked.collect { premiumBlocked = it }
+    }
+
     app?.let { loadedApp ->
         installError?.let { err ->
             InstallErrorSheet(
@@ -161,6 +170,18 @@ fun AppDetailsScreen(
                 isAnonymous = viewModel.authProvider.isAnonymous,
                 onBuy = { openPlayStore(context, loadedApp.packageName) },
                 onDismiss = viewModel::dismissInstallError
+            )
+        }
+
+        premiumBlocked?.let { blocked ->
+            PremiumCatalogBlockedDialog(
+                entry = blocked.entry,
+                details = blocked.details,
+                onRetry = {
+                    premiumBlocked = null
+                    viewModel.enqueueDownload(loadedApp)
+                },
+                onDismiss = { premiumBlocked = null }
             )
         }
     }

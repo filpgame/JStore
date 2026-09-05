@@ -30,10 +30,11 @@ class StoreCatalogItemTest {
 
     @Test
     fun createsIntegrityCheckedExternalApk() {
-        val entry = item().toEntity()
+        val entry = item(premium = true).toEntity()
 
         assertThat(entry.originalPackageId).isEqualTo("com.example.play")
         assertThat(entry.customPackageId).isEqualTo("com.example.j7")
+        assertThat(entry.isPremium).isTrue()
         assertThat(entry.toExternalApk().fileList.single().sha256)
             .isEqualTo("a".repeat(64))
         assertThat(entry.toExternalApk().fileList.single().url)
@@ -42,6 +43,11 @@ class StoreCatalogItemTest {
         val update = entry.toUpdate(hasValidCert = false, isIncompatible = true)
         assertThat(update.hasValidCert).isFalse()
         assertThat(update.isIncompatible).isTrue()
+    }
+
+    @Test
+    fun defaultsMissingPremiumFlagToFalse() {
+        assertThat(item().toEntity().isPremium).isFalse()
     }
 
     @Test
@@ -172,7 +178,8 @@ class StoreCatalogItemTest {
         deviceModels: List<String> = listOf("J7"),
         originalPackageId: String = "com.example.play",
         customPackageId: String = "com.example.j7",
-        apkName: String = "app.apk"
+        apkName: String = "app.apk",
+        premium: Boolean = false
     ) = StoreCatalogRepository.StoreCatalogItem(
         originalPackageId = originalPackageId,
         customPackageId = customPackageId,
@@ -187,6 +194,7 @@ class StoreCatalogItemTest {
         sizeBytes = 1_024,
         sha256 = sha256,
         signerSha256 = signerSha256,
-        deviceModels = deviceModels
+        deviceModels = deviceModels,
+        premium = premium
     )
 }

@@ -106,8 +106,7 @@ sealed class Screen : NavKey, Parcelable {
 
     @Serializable
     data class Splash(
-        val packageName: String? = null,
-        val pendingDestination: Screen? = null
+        val packageName: String? = null
     ) : Screen()
 
     @Serializable

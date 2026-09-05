@@ -23,12 +23,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aurora.store.data.ExodusRepository
 import com.aurora.store.data.StoreCatalogRepository
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.helper.UpdateHelper
 import com.aurora.store.data.model.ExodusTracker
 import com.aurora.store.data.room.update.Update
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -47,6 +50,19 @@ class UpdatesViewModel @Inject constructor(
 
     val fetchingUpdates = updateHelper.isCheckingUpdates
 
+    private val _premiumBlocked = MutableSharedFlow<DownloadEnqueueResult.PremiumBlocked>(
+        extraBufferCapacity = 1
+    )
+    val premiumBlocked = _premiumBlocked.asSharedFlow()
+
+    private data class PendingPremiumUpdate(
+        val update: Update,
+        val blocked: DownloadEnqueueResult.PremiumBlocked
+    )
+
+    private val pendingPremiumUpdates = ArrayDeque<PendingPremiumUpdate>()
+    private var activePremiumUpdate: PendingPremiumUpdate? = null
+
     fun fetchUpdates() {
         updateHelper.checkUpdatesNow()
     }
@@ -56,7 +72,7 @@ class UpdatesViewModel @Inject constructor(
     }
 
     fun download(update: Update) {
-        viewModelScope.launch { downloadHelper.enqueueUpdate(update) }
+        viewModelScope.launch { processUpdate(update) }
     }
 
     suspend fun getNewTrackers(
@@ -69,8 +85,30 @@ class UpdatesViewModel @Inject constructor(
 
     fun downloadAll(updates: List<Update>) {
         viewModelScope.launch {
-            updates.forEach { downloadHelper.enqueueUpdate(it) }
+            updates.forEach { processUpdate(it) }
         }
+    }
+
+    fun retryPremiumDownload() {
+        val pending = activePremiumUpdate ?: return
+        activePremiumUpdate = null
+        viewModelScope.launch { processUpdate(pending.update) }
+    }
+
+    private suspend fun processUpdate(update: Update) {
+        when (val result = downloadHelper.enqueueUpdate(update)) {
+            DownloadEnqueueResult.Enqueued -> showNextPremiumBlock()
+            is DownloadEnqueueResult.PremiumBlocked -> {
+                pendingPremiumUpdates.addLast(PendingPremiumUpdate(update, result))
+                showNextPremiumBlock()
+            }
+        }
+    }
+
+    private suspend fun showNextPremiumBlock() {
+        if (activePremiumUpdate != null || pendingPremiumUpdates.isEmpty()) return
+        activePremiumUpdate = pendingPremiumUpdates.removeFirst()
+        _premiumBlocked.emit(checkNotNull(activePremiumUpdate).blocked)
     }
 
     fun cancelDownload(packageName: String) {

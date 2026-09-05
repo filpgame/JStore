@@ -41,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,10 +61,6 @@ import com.aurora.store.compose.composition.LocalNetworkStatus
 import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.composition.scaledDp
 import com.aurora.store.compose.navigation.Destination
-import com.aurora.store.compose.navigation.Screen
-import com.aurora.store.data.installer.jaecoo.JaecooPlanDetails
-import com.aurora.store.data.installer.jaecoo.JaecooPlanGate
-import com.aurora.store.data.installer.jaecoo.allowsJaecooInstall
 import com.aurora.store.data.model.AuthState
 import com.aurora.store.data.model.NetworkStatus
 import com.aurora.store.data.work.ExodusTrackerWorker
@@ -75,31 +70,6 @@ import com.aurora.store.util.CertUtil.GOOGLE_PLAY_CERT
 import com.aurora.store.util.PackageUtil
 import com.aurora.store.util.Preferences
 import com.aurora.store.viewmodel.auth.AuthViewModel
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.launch
-
-/**
- * Hilt entry point so this VM-less composable can resolve the application-scoped
- * [JaecooPlanGate] singleton without forcing [AuthViewModel] to learn about a
- * Jaecoo-product-only feature.
- */
-@EntryPoint
-@InstallIn(SingletonComponent::class)
-internal interface SplashEntryPoint {
-    fun planGate(): JaecooPlanGate
-}
-
-/**
- * Snapshot of a denied Jconfig plan-gate result, paired with the source (fresh login vs.
- * saved-session auto-restore) so the dialog can pick the right body text.
- */
-internal data class GateBlock(
-    val details: JaecooPlanDetails,
-    val fromSavedSession: Boolean
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,7 +77,6 @@ fun SplashScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     deepLinkPackageName: String? = null,
     deepLinkDevId: String? = null,
-    pendingDestination: Screen? = null,
     onNavigateTo: (Destination) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -134,47 +103,13 @@ fun SplashScreen(
     var anonymousLoading by remember { mutableStateOf(false) }
     var googleLoading by remember { mutableStateOf(false) }
 
-    // Tracks whether the user explicitly tapped a login button on this screen, used by the
-    // Jconfig plan-gate to differentiate a fresh login attempt from a saved-session auto-restore.
-    var userInitiatedAuth by remember { mutableStateOf(false) }
-
-    // Holds the gate result whenever the Jconfig plan-gate denies entry, used to drive the
-    // blocking dialog. `null` means no dialog should be shown.
-    var gateBlock by remember { mutableStateOf<GateBlock?>(null) }
-
-    val planGate = remember(context) {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            SplashEntryPoint::class.java
-        ).planGate()
-    }
-
-    // Single source of truth for navigating away from the splash, used both by the success path
-    // and by the dialog's retry handler.
-    fun navigateAfterGate() {
-        when (val destination = pendingDestination) {
-            is Screen.AppDetails -> onNavigateTo(Destination.AppDetails(destination.packageName))
-            is Screen.DevProfile -> onNavigateTo(Destination.DevProfile(destination.developerId))
-            is Screen.PublisherProfile -> onNavigateTo(
-                Destination.PublisherProfile(destination.publisherId)
+    // Single source of truth for navigating away from the splash after authentication.
+    fun navigateAfterAuth() {
+        when {
+            !deepLinkDevId.isNullOrBlank() -> onNavigateTo(Destination.DevProfile(deepLinkDevId))
+            !deepLinkPackageName.isNullOrBlank() -> onNavigateTo(
+                Destination.AppDetails(deepLinkPackageName)
             )
-            is Screen.Main -> onNavigateTo(Destination.Main(destination.initialTab))
-            null -> when {
-                !deepLinkDevId.isNullOrBlank() -> onNavigateTo(
-                    Destination.DevProfile(deepLinkDevId)
-                )
-                !deepLinkPackageName.isNullOrBlank() -> onNavigateTo(
-                    Destination.AppDetails(deepLinkPackageName)
-                )
-                else -> onNavigateTo(
-                    Destination.Main(
-                        Preferences.getInteger(
-                            context,
-                            Preferences.PREFERENCE_DEFAULT_SELECTED_TAB
-                        )
-                    )
-                )
-            }
             else -> onNavigateTo(
                 Destination.Main(
                     Preferences.getInteger(
@@ -185,8 +120,6 @@ fun SplashScreen(
             )
         }
     }
-
-    val gateDialogScope = rememberCoroutineScope()
 
     val accountLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -212,24 +145,7 @@ fun SplashScreen(
                 anonymousLoading = false
                 googleLoading = false
                 ExodusTrackerWorker.enqueue(context)
-                if (BuildConfig.FLAVOR == "jaecoo") {
-                    // Single chokepoint where the gate runs for both fresh logins and the
-                    // saved-session auto-restore (preferred over scattering it in every
-                    // button handler). When the gate denies entry we hold the splash and
-                    // surface the dialog; only Trial/Premium proceed past this point.
-                    val details = planGate.currentPlanDetails()
-                    if (details.plan.allowsJaecooInstall()) {
-                        gateBlock = null
-                        navigateAfterGate()
-                    } else {
-                        gateBlock = GateBlock(
-                            details = details,
-                            fromSavedSession = !userInitiatedAuth
-                        )
-                    }
-                } else {
-                    navigateAfterGate()
-                }
+                navigateAfterAuth()
             }
             is AuthState.PendingAccountManager -> requestAuthTokenForGoogle(
                 viewModel = viewModel,
@@ -368,7 +284,6 @@ fun SplashScreen(
                             ),
                             enabled = !anonymousLoading && !googleLoading && isOnline,
                             onClick = {
-                                userInitiatedAuth = true
                                 if (canMicroGLogin) {
                                     googleLoading = true
                                     accountLauncher.launch(
@@ -396,7 +311,6 @@ fun SplashScreen(
                                 ),
                                 enabled = !googleLoading && !anonymousLoading && isOnline,
                                 onClick = {
-                                    userInitiatedAuth = true
                                     anonymousLoading = true
                                     viewModel.buildAnonymousAuthData()
                                 }
@@ -414,30 +328,6 @@ fun SplashScreen(
                 }
             }
         }
-    }
-
-    gateBlock?.let { block ->
-        JaecooPlanBlockedDialog(
-            details = block.details,
-            fromSavedSession = block.fromSavedSession,
-            onRetry = {
-                gateDialogScope.launch {
-                    val details = planGate.currentPlanDetails()
-                    if (details.plan.allowsJaecooInstall()) {
-                        gateBlock = null
-                        navigateAfterGate()
-                    } else {
-                        gateBlock = GateBlock(
-                            details = details,
-                            fromSavedSession = block.fromSavedSession
-                        )
-                    }
-                }
-            },
-            onOpenJconfig = {
-                /* Jconfig launcher handled inside the dialog; nothing further here. */
-            }
-        )
     }
 }
 

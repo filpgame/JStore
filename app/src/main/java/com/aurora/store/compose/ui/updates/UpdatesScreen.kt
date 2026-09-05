@@ -14,8 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -29,6 +32,8 @@ import com.aurora.store.compose.composable.ShimmerUpdateItem
 import com.aurora.store.compose.composable.app.AppUpdateItem
 import com.aurora.store.compose.composition.scaledDimensionResource
 import com.aurora.store.compose.navigation.Destination
+import com.aurora.store.compose.ui.commons.PremiumCatalogBlockedDialog
+import com.aurora.store.data.helper.DownloadEnqueueResult
 import com.aurora.store.data.model.DownloadStatus
 import com.aurora.store.data.room.download.Download
 import com.aurora.store.data.room.update.Update
@@ -49,6 +54,13 @@ fun UpdatesScreen(
     val ignoredUpdates by viewModel.ignoredUpdates.collectAsStateWithLifecycle()
     val downloads by viewModel.downloadsList.collectAsStateWithLifecycle()
     val fetchingUpdates by viewModel.fetchingUpdates.collectAsStateWithLifecycle()
+    var premiumBlocked by remember {
+        mutableStateOf<DownloadEnqueueResult.PremiumBlocked?>(null)
+    }
+
+    LaunchedEffect(viewModel) {
+        viewModel.premiumBlocked.collect { premiumBlocked = it }
+    }
 
     val updateMap = remember(updates, downloads) {
         updates?.associateWith { update ->
@@ -253,6 +265,18 @@ fun UpdatesScreen(
                 }
             }
         }
+    }
+
+    premiumBlocked?.let { blocked ->
+        PremiumCatalogBlockedDialog(
+            entry = blocked.entry,
+            details = blocked.details,
+            onRetry = {
+                premiumBlocked = null
+                viewModel.retryPremiumDownload()
+            },
+            onDismiss = { premiumBlocked = null }
+        )
     }
 }
 

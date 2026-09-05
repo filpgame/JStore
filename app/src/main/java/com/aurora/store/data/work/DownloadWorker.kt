@@ -34,7 +34,10 @@ import com.aurora.gplayapi.network.IHttpClient
 import com.aurora.store.AuroraApp
 import com.aurora.store.R
 import com.aurora.store.data.AccountRepository
+import com.aurora.store.data.StoreCatalogRepository
 import com.aurora.store.data.event.InstallerEvent
+import com.aurora.store.data.helper.CatalogDownloadAccess
+import com.aurora.store.data.helper.CatalogDownloadPolicy
 import com.aurora.store.data.helper.DownloadHelper
 import com.aurora.store.data.installer.AppInstaller
 import com.aurora.store.data.model.Algorithm
@@ -83,6 +86,8 @@ class DownloadWorker @AssistedInject constructor(
     private val appInstaller: AppInstaller,
     private val httpClient: IHttpClient,
     private val accountRepository: AccountRepository,
+    private val storeCatalogRepository: StoreCatalogRepository,
+    private val catalogDownloadPolicy: CatalogDownloadPolicy,
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : AuthWorker(authProvider, tokenProvider, context, workerParams) {
@@ -135,6 +140,11 @@ class DownloadWorker @AssistedInject constructor(
         // Fetch required data for download
         try {
             download = downloadDao.getDownload(inputData.getString(DownloadHelper.PACKAGE_NAME)!!)
+            if (isPremiumDownloadBlocked()) {
+                downloadDao.updateStatus(download.packageName, DownloadStatus.CANCELLED)
+                notificationManager.cancel(NOTIFICATION_ID)
+                return Result.success()
+            }
             purchaseHelper = resolvePurchaseHelper(download.packageName)
         } catch (exception: Exception) {
             return onFailure(exception)
@@ -270,9 +280,26 @@ class DownloadWorker @AssistedInject constructor(
         return onSuccess()
     }
 
+    private suspend fun isPremiumDownloadBlocked(): Boolean {
+        val entry = storeCatalogRepository.findByCustomPackage(download.packageName)
+            ?: return false
+        return when (catalogDownloadPolicy.evaluate(entry)) {
+            CatalogDownloadAccess.Allowed -> false
+            is CatalogDownloadAccess.Blocked -> {
+                Log.i(TAG, "Blocked Premium catalog download for ${download.packageName}")
+                true
+            }
+        }
+    }
+
     private suspend fun onSuccess(): Result {
         return withContext(NonCancellable) {
             return@withContext try {
+                if (isPremiumDownloadBlocked()) {
+                    downloadDao.updateStatus(download.packageName, DownloadStatus.CANCELLED)
+                    notificationManager.cancel(NOTIFICATION_ID)
+                    return@withContext Result.success()
+                }
                 // Update the ongoing foreground notification to reflect the install phase,
                 // so the user sees a clean "Downloading -> Installing" progression instead of
                 // a stale download bar lingering at 100%.
