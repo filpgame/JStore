@@ -70,6 +70,8 @@ class SpoofProvider @Inject constructor(
             35 to "Google Pixel 9a",
             34 to "Nothing Phone(1)",
             33 to "Google Pixel Tablet",
+            // API 30/Android 11 ARM64 profile matching the J7 head unit.
+            30 to "reloaded_beryllium",
             29 to "Nokia 1.3"
         )
 
@@ -165,8 +167,7 @@ class SpoofProvider @Inject constructor(
     @VisibleForTesting
     internal fun selectJaecooBaseProfile(): Properties? {
         val sdk = Build.VERSION.SDK_INT
-        val (minSdk, name) = JAECOO_BUILT_IN_BY_MIN_SDK.firstOrNull { (min, _) -> sdk >= min }
-            ?: return loadJaecooAsset()
+        val name = jaecooBaseProfileNameForSdk(sdk) ?: return loadJaecooAsset()
         return availableDeviceProperties.firstOrNull { it.getProperty("UserReadableName") == name }
             ?: loadJaecooAsset()
     }
@@ -260,3 +261,6 @@ class SpoofProvider @Inject constructor(
         }
     }
 }
+
+internal fun jaecooBaseProfileNameForSdk(sdk: Int): String? =
+    SpoofProvider.JAECOO_BUILT_IN_BY_MIN_SDK.firstOrNull { (minSdk, _) -> sdk >= minSdk }?.second

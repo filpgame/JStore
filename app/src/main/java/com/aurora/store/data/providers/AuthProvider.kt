@@ -38,6 +38,7 @@ import com.aurora.store.util.Preferences
 import com.aurora.store.util.Preferences.PREFERENCE_AUTH_DATA
 import com.aurora.store.util.Preferences.PREFERENCE_DISPENSER_URLS
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Properties
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -99,10 +100,11 @@ class AuthProvider @Inject constructor(
         }
     }
 
-    private fun decodeAuthData(account: Account?): AuthData =
-        account?.authDataJson?.takeIf { it.isNotBlank() }
-            ?.let { json.decodeFromString<AuthData>(it) }
-            ?: AuthData("BOGUS")
+    private fun decodeAuthData(account: Account?): AuthData {
+        val savedAuthData = account?.authDataJson?.takeIf { it.isNotBlank() }
+            ?.let { json.decodeFromString<AuthData>(it) } ?: return AuthData("BOGUS")
+        return savedAuthData.takeIf(::matchesCurrentDeviceProfile) ?: AuthData("BOGUS")
+    }
 
     /**
      * Checks whether saved AuthData is valid for the current device profile.
@@ -112,9 +114,16 @@ class AuthProvider @Inject constructor(
      * register the current profile with Google Play.
      */
     fun isSavedAuthDataValid(): Boolean = authData?.let { savedAuthData ->
-        savedAuthData.deviceInfoProvider?.properties == spoofProvider.deviceProperties &&
-            AuthHelper.using(httpClient).isValid(savedAuthData)
+        matchesCurrentDeviceProfile(savedAuthData) &&
+            AuthHelper.using(httpClient).isValid(savedAuthData) &&
+            matchesCurrentDeviceProfile(savedAuthData)
     } ?: false
+
+    private fun matchesCurrentDeviceProfile(authData: AuthData): Boolean =
+        authDataMatchesDeviceProfile(
+            authData.deviceInfoProvider?.properties,
+            spoofProvider.deviceProperties
+        )
 
     /**
      * Builds [AuthData] for login using personal Google account
@@ -183,8 +192,9 @@ class AuthProvider @Inject constructor(
      */
     suspend fun getAuthData(accountId: String): AuthData? {
         val account = accountRepository.getById(accountId) ?: return null
-        return account.authDataJson?.takeIf { it.isNotBlank() }
-            ?.let { json.decodeFromString<AuthData>(it) }
+        val authData = account.authDataJson?.takeIf { it.isNotBlank() }
+            ?.let { json.decodeFromString<AuthData>(it) } ?: return null
+        return authData.takeIf(::matchesCurrentDeviceProfile)
     }
 
     /**
@@ -375,3 +385,8 @@ class AuthProvider @Inject constructor(
         }
     }
 }
+
+internal fun authDataMatchesDeviceProfile(
+    savedProfile: Properties?,
+    activeProfile: Properties
+): Boolean = savedProfile != null && savedProfile == activeProfile

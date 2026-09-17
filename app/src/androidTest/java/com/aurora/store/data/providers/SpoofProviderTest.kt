@@ -67,10 +67,17 @@ class SpoofProviderTest {
             Build.VERSION.SDK_INT >= 35 -> "Google Pixel 9a"
             Build.VERSION.SDK_INT >= 34 -> "Nothing Phone(1)"
             Build.VERSION.SDK_INT >= 33 -> "Google Pixel Tablet"
+            Build.VERSION.SDK_INT >= 30 -> "reloaded_beryllium"
             Build.VERSION.SDK_INT >= 29 -> "Nokia 1.3"
             else -> "sirius"
         }
         assertThat(base?.getProperty("UserReadableName")).isEqualTo(expected)
+        if (Build.VERSION.SDK_INT in 30..32) {
+            assertThat(base?.getProperty("Build.VERSION.SDK_INT")).isEqualTo("30")
+            assertThat(base?.getProperty("Build.VERSION.RELEASE")).isEqualTo("11")
+            assertThat(base?.getProperty("Platforms").orEmpty().split(','))
+                .contains("arm64-v8a")
+        }
     }
 
     @Test
