@@ -345,7 +345,18 @@ class DownloadWorker @AssistedInject constructor(
         // Expired URLs were re-purchased by clearing the file list; retrying re-fetches them.
         is ExpiredUrlException -> true
 
-        else -> isRetryable(throwable.cause)
+        else -> {
+            // OkHttp surfaces an HTTP/2 RST_STREAM during a response body read as an
+            // IOException with this message. It is transient, and the partial .tmp file can
+            // be resumed on the WorkManager retry.
+            if (throwable is IOException &&
+                throwable.message?.startsWith("stream was reset:") == true
+            ) {
+                true
+            } else {
+                isRetryable(throwable.cause)
+            }
+        }
     }
 
     private suspend fun onFailure(exception: Exception): Result {
